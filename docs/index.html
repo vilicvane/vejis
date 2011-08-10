@@ -1,0 +1,261 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <title>VEJIS - It's JavaScript!</title>
+    <link href="main.css" rel="stylesheet" type="text/css" />
+    <script src="main.js" type="text/javascript"></script>
+    <script src="vlight.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="page_wrapper">
+    <div id="header">
+        <a id="logo" href="#">
+            <span class="title">VEJIS</span>
+            <span class="description">It's JavaScript!</span>
+        </a>
+        <div id="nav">
+            <a class="current" href="#">Introduction</a>
+            <a class="disabled" href="#">Get Started</a>
+            <a class="disabled" href="#">Documentation</a>
+            <a href="#">Download</a>
+        </div>
+        <a id="donate" href="#">Donate</a>
+        <div id="header_light"></div>
+    </div>
+    <div id="content_wrapper">
+        <div class="title">What is VEJIS</div>
+        <div class="content">
+            <p>VEJIS is a JavaScript library for "grammer level" enhancing. With VEJIS, one can easily create and use namespaces and define powerful VEJIS classes.</p>
+        </div>
+        <div class="title">Namespace System</div>
+        <div class="content">
+            <p>So, as JavaScript is no longer just a way to deal with simple AJAX things, you may find the number of your code become bigger and bigger. We do except a better way to organize our code and code files.</p>
+            <p>That's accurately what VEJIS can bring to you!</p>
+            <p>VEJIS namespace system provides 4 methods to create, close, load and use the related file and namespace.</p>
+<pre class="vlight">
+//create a namespace named "vejis".
+namespace_('vejis', function () {
+    this.test = function () { };
+});
+
+//now we know the namespace "vejis" and function "test" are created immediately,
+//so, let's call the function "test".
+vejis.test();
+
+//sometimes, it may be hard to know when will the namespace be created,
+//but it would be very easy with "use_".
+use_('vejis', function (vejis) {
+    vejis.test();
+});
+
+//what if a namespace is created in another file?
+//try this.
+require_('vejis.alpha.js', function (alpha) {
+    //some other code.
+});
+
+//close a namespace and make it no longer able extended.
+close_('vejis');
+</pre>
+            <p>As what you see, the 4 methods are "namespace_", "close_", "use_" and "require_", and you may want more about them.</p>
+            <ul>
+                <li>
+                    <b>namespace_(name : string, body : function)</b><br />
+                    <p>Create a namespace. The namespace will be created only if it's parent namespace has been created. For example, namespace "vejis.alpha" will be created only if namespace "vejis" has been created. Otherwise, it would be added into a queue, once the parent namespace is created, it would be created immediately.</p>
+                    <p>In a namespace body, one can also use the 4 methods with "this", and the "path" is relative.</p>
+<pre class="vlight">
+namespace_('vilic', function () {
+    //this == vilic;
+    var that = this;
+
+    this.namespace_('alpha', function () {
+        //this == vilic.alpha;
+    });
+
+    this.use_('alpha', function (alpha) {
+        //this == that;
+        //alpha == vilic.alpha;
+    });
+
+    //namespace that starts with a "." is absolute.
+    this.use_('.vilic.alpha', function (alpha) {
+        //this == that;
+        //alpha == vilic.alpha;
+    });
+
+    this.require_('somefile.js', function (ns) {
+        //this == that;
+    });
+});
+</pre>
+                </li>
+                <li>
+                    <b>close_(name : string)</b><br />
+                    <p>Close a namespace. Before closing a namespace, one can use "namespace_" to extend a namespace that exists, and the private objects (will be mentioned later) might be exposed. The method won't prevent code from creating or modifying a child namespace of the namespace being closed.</p>
+                </li>
+                <li>
+                    <b>use_(namespace : string [, namespace_args : string], body : function)</b><br />
+                    <p>You can use one or more namespaces at the same time, and the namespace objects will be the parameters in order for "body" when callback.</p>
+<pre class="vlight">
+use_('vejis.aaa', 'vejis.bbb', function (aaa, bbb) {
+    //aaa == vejis.aaa;
+    //bbb == vejis.bbb;
+});
+</pre>
+                    <p>The "use_" method won't send any request to get a script file. If the namespaces are not yet ready, it will add them to a queue, and once the namespaces needed are ready, the "body" will be called immediately.</p>
+                </li>
+                <li>
+                    <b>require_(url : string [, url_args : string][, body : function])</b><br />
+                    <p>The "require_" method will try to get the JS files and execute them, then, it's actually quite like "use_". But the JS file to require has some rules. It must be written like this.</p>
+<pre class="vlight">
+namespace_('somename', function () {
+    //code...
+});
+</pre>
+                    <p>If you just want to require a file but not to use it right now, you can ignore the "body", and use "use_".</p>
+<pre class="vlight">
+require_('somename.js');
+
+//when you want to use it, use "use_".
+use_('somename', function (somename) {
+    //code...
+});
+</pre>
+                </li>
+            </ul>
+            <p>The namespace system also provide a <b>private object</b> for every namespace, you can use it to transmit values privately. But remember to use "close_" method to close the namespace if the private stuffs are important.</p>
+<pre class="vlight">
+namespace_('vejis', function (pri) {
+    this.test = function () { alert(pri.abc); };
+});
+
+namespace_('vejis', function (pri) {
+    pri.abc = 123;
+});
+
+//close the namespace if neccessary.
+//close_('vejis');
+
+vejis.test();
+</pre>
+        </div>
+        <div class="title">Class Enhancing</div>
+        <div class="content">
+            <p>Actually it's the core function of the older VEJIS. Before this, VEJIS was focusing on method overloading, but in the new one, there's nothing about the method overloading any more. But the support for class enhancing has never been decreased.</p>
+            <p>There are some features of VEJIS class.</p>
+			<ul>
+				<li>
+					<b>Basic usage.</b><br />
+<pre class="vlight">
+var A = class_(function () {
+	//define constructor.
+	this._(function (value) {
+		this.value = value;
+	});
+
+	//define a property.
+	this.value = 0;
+
+	//define a method.
+	this.test = function () {
+		alert(this.value);
+	};
+});
+
+var a = new A(123);
+//a.value == 123;
+
+a.test(); //alert(123);
+</pre>
+				</li>
+				<li>
+					<b>Static private and public objects.</b><br />
+<pre class="vlight">
+var A = class_(function (pub, pri) {
+	this.set = function (value) {
+		pri.priValue = value || 456;
+	};
+
+	this.get = function () {
+		return pri.priValue;
+	};
+}).static_(function () {
+	//define static private properties, optional.
+	this.private_({
+		priValue: 'pri'
+	});
+
+	//define static public properties, optional.
+	this.public_({
+		pubValue: 'pub'
+	});
+});
+
+//the static public properties will be copied to the class "A".
+//A.pubValue == 'pub';
+
+var a1 = new A();
+var a2 = new A();
+
+a1.set(123);
+//a2.get() == 123;
+
+//actually, if you only want static private properties, you can use something like this.
+var C = class_(function (pub, pri) {
+    //code...
+}).static_({
+    priValue: 'pri'
+});
+</pre>
+					<p>You may notice the static public object "pub", there are some differences between it and the "A", namely the class. Actually when it's a base class of inheriting. So, one should always use "pub" but not "A" to access static public properties.</p>
+				</li>
+				<li>
+					<b>Inheriting.</b><br />
+<pre class="vlight">
+var B = class_(function (pub, pri) {
+	this.getFromB = function () { return pri.priValue; };
+}).inherit_(A);
+
+var a = new A();
+var b = new B();
+
+//call the method defined in class A from the two instances.
+a.set(987);
+b.set(789);
+
+//a.get() == 987;
+//b.get() == 789;
+//b.getFromB() == 789;
+</pre>
+					<p>This example shows some relationship of the private objects in class "A" and class "B": <b>they are individual</b>. And so are the public objects. So, don't worry about your changes to a new class on the two objects would influence the old ones (the premise is, you are using the objects "pub" and "pri").</p>
+				</li>
+			</ul>
+        </div>
+        <div class="title">Something else</div>
+        <div class="content">
+            <p>You may notice every method of vejis ends with a "_", I guess there might be many people who don't like this style, but they will. When VEJIS is created, as what was mentioned, its core function is method overloading. I wanted a mark that is brief and clean enough to create a VEJIS method, and finally I chose "_", the grammer was like this.</p>
+<pre class="vlight">
+//note, this function has already been removed, so, it's no longer available.
+//as for why, I think it was that the overloading stuffs cost too much.
+
+//create a VEJIS method.
+var fn = _(String, Number, function (str, num) {
+    //code...
+});
+
+//overload method fn.
+fn._(Boolean, function (b) {
+    //code...
+});
+</pre>
+            <p>Actually, with that code, one is able to create a class with multiple constructors. But sometimes, the things we should change may be only lines, if we use a way like that, a constructor would need to be rewritten totally. So I wanted to create a function to solve this problems. You know that the word "class" is one of JavaScript's key word, so I simply added a "_", and made it "class_".</p>
+            <p>As VEJIS is a "grammer level" enhancing, there're chances that the words it use may conflict with some key words. So, the suffix "_" became a common rule for methods defined by VEJIS.</p>
+        </div>
+    </div>
+    <div id="footer">©2011 VEJIS.ORG</div>
+</div>
+
+
+</body>
+</html>
