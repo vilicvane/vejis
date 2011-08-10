@@ -8,7 +8,7 @@
 (function () {
     //for debugging
     var _path = this.location.toString();
-    var _dir = _path.replace(/[^\/]+$/, '');
+    var _dir = _path.replace(/[^\/]+([\?#].*)?$/, '');
     var _stackSkip = 0;
 
     this.is_ = function (obj, Type) {
@@ -34,6 +34,23 @@
                     break;
     };
 
+    this.enum_ = function () {
+        var items = arguments;
+        var re = /[a-z_\$][a-z0-9_\$]*/i;
+
+        for (var i = 0; i < items.length; i++)
+            if (typeof items[i] != 'string' || !re.test(items[i]))
+                error('The name of possible values of for enum must be string.');
+
+        for (var i = 0; i < items.length; i++)
+            Enum[items[i]] = new Enum(items[i]);
+
+        return Enum;
+        function Enum(name) {
+            this.toString = function () { return name; };
+        }
+    };
+
     /*
     Namespace
     */
@@ -44,10 +61,13 @@
         var nsinfos = createMap(); //namespace infos
         var useinfos = createMap();
         var sinfos = createMap(); //script infos
+        var dirs = createMap();
 
         Namespace.call(global);
 
-        function namespace_(name, body) {
+        function namespace_(name, body, dir) {
+            var that = this;
+
             name = getNSName(this, name);
 
             var index = name.lastIndexOf('.');
@@ -60,10 +80,11 @@
 
             function main() {
                 var nsinfo = nsinfos(name);
-                if (!nsinfo)
+                if (!nsinfo) {
                     nsinfo = nsinfos(name, buildNSInfo(name, 1));
-
-                if (nsinfo.status == -1) //已关闭
+                    dirs(name, dir || (that == global ? _dir : dirs(that.toString())));
+                }
+                if (nsinfo.status == -1) //namespace closed
                     error('The namespace has already been closed and is no longer able to be extended.', 1);
 
                 var callQueue = false;
@@ -153,6 +174,7 @@
 
         function require_(url_args, opt_body) {
             var that = this;
+            var dir = this == global ? _dir : dirs(this.toString());
 
             var urls = [];
             var body;
@@ -178,13 +200,18 @@
             var nsObjs = [];
 
             for (var i = 0; i < urls.length; i++) (function (i) {
-                var url = urls[i];
+                var url = getURL(urls[i], dir);
                 var sinfo = sinfos(url);
 
                 if (!sinfo) {
                     sinfo = sinfos(url, { ns: null, status: 0, queue: [] });
                     request(url, function (script) {
-                        var name = global.eval(script);
+                        var name = global.eval(
+                            '(function (namespace_) { return true && ' + script + ' })'
+                        )(function (name, body) {
+                            return namespace_.call(global, name, body, getDir(url));
+                        });
+
                         global.use_(name, function (ns) {
                             sinfo.ns = ns;
                             var queue = sinfo.queue;
@@ -257,6 +284,19 @@
             return name;
         }
 
+        function getURL(url, base) {
+            if (/^\w+:\/\//.test(url))
+                return url;
+            else if (url.charAt(0) == '/')
+                return _dir + url.substr(1);
+            else
+                return base + url;
+        }
+
+        function getDir(path) {
+            return path.replace(/[^\/]+([\?#].*)?$/, '');
+        }
+
         function createMap() {
             var map = {};
 
@@ -269,8 +309,6 @@
 
             return fn;
         }
-
-
     })();
 
     /*
@@ -403,24 +441,6 @@
                 }
                 else copy(priBody, pri, overwrite);
             }
-        } ());
-
-        (function () {
-            var re = /[a-z_\$][a-z0-9_\$]*/i;
-            this.enum_ = function () {
-                var items = arguments;
-                for (var i = 0; i < items.length; i++)
-                    if (typeof items[i] != 'string' || !re.test(items[i]))
-                        error('The name of possible values of for enum must be string.');
-
-                for (var i = 0; i < items.length; i++)
-                    Enum[items[i]] = new Enum(items[i]);
-
-                return Enum;
-                function Enum(name) {
-                    this.toString = function () { return name; };
-                }
-            };
         })();
 
         function copy(from, to, overwrite) {
@@ -455,7 +475,7 @@
             };
         }
 
-    } ());
+    })();
 
     /*
     error
