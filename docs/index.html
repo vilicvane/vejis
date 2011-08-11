@@ -32,7 +32,7 @@
         <div class="content">
             <p>So, as JavaScript is no longer just a way to deal with simple AJAX things, you may find the number of your code become bigger and bigger. We do except a better way to organize our code and code files.</p>
             <p>That's accurately what VEJIS can bring to you!</p>
-            <p>VEJIS namespace system provides 4 methods to create, close, load and use the related file and namespace.</p>
+            <p>VEJIS namespace system provides 3 methods to create, load and use the related file and namespace.</p>
 <pre class="vlight">
 //create a namespace named "vejis".
 namespace_('vejis', function () {
@@ -54,11 +54,8 @@ use_('vejis', function (vejis) {
 require_('vejis.alpha.js', function (alpha) {
     //some other code.
 });
-
-//close a namespace and make it no longer able extended.
-close_('vejis');
 </pre>
-            <p>As what you see, the 4 methods are "namespace_", "close_", "use_" and "require_", and you may want more about them.</p>
+            <p>As what you see, the 3 methods are "namespace_", "use_" and "require_", and you may want more about them.</p>
             <ul>
                 <li>
                     <b>namespace_(name : string, body : function)</b><br />
@@ -91,10 +88,6 @@ namespace_('vilic', function () {
 </pre>
                 </li>
                 <li>
-                    <b>close_(name : string)</b><br />
-                    <p>Close a namespace. Before closing a namespace, one can use "namespace_" to extend a namespace that exists, and the private objects (will be mentioned later) might be exposed. The method won't prevent code from creating or modifying a child namespace of the namespace being closed.</p>
-                </li>
-                <li>
                     <b>use_(namespace : string [, namespace_args : string], body : function)</b><br />
                     <p>You can use one or more namespaces at the same time, and the namespace objects will be the parameters in order for "body" when callback.</p>
 <pre class="vlight">
@@ -124,21 +117,6 @@ use_('somename', function (somename) {
 </pre>
                 </li>
             </ul>
-            <p>The namespace system also provide a <b>private object</b> for every namespace, you can use it to transmit values privately. But remember to use "close_" method to close the namespace if the private stuffs are important.</p>
-<pre class="vlight">
-namespace_('vejis', function (pri) {
-    this.test = function () { alert(pri.abc); };
-});
-
-namespace_('vejis', function (pri) {
-    pri.abc = 123;
-});
-
-//close the namespace if neccessary.
-//close_('vejis');
-
-vejis.test();
-</pre>
         </div>
         <div class="title">Class Enhancing</div>
         <div class="content">

@@ -65,8 +65,9 @@
 
         Namespace.call(global);
 
-        function namespace_(name, body, dir) {
+        function namespace_(name, body) {
             var that = this;
+            var dir = arguments[2];
 
             name = getNSName(this, name);
 
@@ -80,12 +81,14 @@
 
             function main() {
                 var nsinfo = nsinfos(name);
-                if (!nsinfo) {
-                    nsinfo = nsinfos(name, buildNSInfo(name, 1));
-                    dirs(name, dir || (that == global ? _dir : dirs(that.toString())));
+                if (nsinfo) {
+                    if (nsinfo.status == 1)
+                        error('The namespace has already been created.', 1);
                 }
-                if (nsinfo.status == -1) //namespace closed
-                    error('The namespace has already been closed and is no longer able to be extended.', 1);
+                else
+                    nsinfo = nsinfos(name, buildNSInfo(name, 1));
+
+                dirs(name, dir || (that == global ? _dir : dirs(that.toString())));
 
                 var callQueue = false;
                 if (nsinfo.status == 0) {
@@ -102,7 +105,7 @@
                 catch (e) { }
 
                 Namespace.call(ns);
-                body.call(ns, nsinfo.pri);
+                body.call(ns);
 
                 if (callQueue) {
                     var queue = nsinfo.queue;
@@ -113,16 +116,6 @@
             }
 
             return name;
-        }
-
-        function close_(namespace) {
-            namespace = getNSName(this, namespace);
-
-            var nsinfo = nsinfos(namespace);
-            if (!nsinfo)
-                error('The namespace "' + namespace + '" doesn\'t exist.');
-
-            nsinfo.status = -1;
         }
 
         function use_(namespace_args, body) {
@@ -207,7 +200,7 @@
                     sinfo = sinfos(url, { ns: null, status: 0, queue: [] });
                     request(url, function (script) {
                         var name = global.eval(
-                            '(function (namespace_) { return true && ' + script + ' })'
+                            '(function (namespace_) { return false || ' + script + ' })'
                         )(function (name, body) {
                             return namespace_.call(global, name, body, getDir(url));
                         });
@@ -260,14 +253,12 @@
             this.namespace_ = namespace_;
             this.require_ = require_;
             this.use_ = use_;
-            this.close_ = close_;
         }
 
         function buildNSInfo(name, status) {
             return {
                 ns: { toString: function () { return name; } },
-                pri: {},
-                status: status, //-1: closed, 0: uninited, 1: normal
+                status: status, //0: uninited, 1: normal
                 queue: []
             };
         }
