@@ -5,41 +5,50 @@
     NOT FOR RELEASE
 */
 
+//VEJIS CORE
 (function () {
+	var global = this;
+
 	//for debugging
 	var _path = this.location.toString();
 	var _dir = _path.replace(/[^\/]+([\?#].*)?$/, '');
 	var _stackSkip = 0;
 
-	this.is_ = function (obj, Type) {
+	var toString = Object.prototype.toString;
+	var md5 = function () { function l(f, e) { var d = f[0], a = f[1], b = f[2], c = f[3], d = g(d, a, b, c, e[0], 7, -680876936), c = g(c, d, a, b, e[1], 12, -389564586), b = g(b, c, d, a, e[2], 17, 606105819), a = g(a, b, c, d, e[3], 22, -1044525330), d = g(d, a, b, c, e[4], 7, -176418897), c = g(c, d, a, b, e[5], 12, 1200080426), b = g(b, c, d, a, e[6], 17, -1473231341), a = g(a, b, c, d, e[7], 22, -45705983), d = g(d, a, b, c, e[8], 7, 1770035416), c = g(c, d, a, b, e[9], 12, -1958414417), b = g(b, c, d, a, e[10], 17, -42063), a = g(a, b, c, d, e[11], 22, -1990404162), d = g(d, a, b, c, e[12], 7, 1804603682), c = g(c, d, a, b, e[13], 12, -40341101), b = g(b, c, d, a, e[14], 17, -1502002290), a = g(a, b, c, d, e[15], 22, 1236535329), d = i(d, a, b, c, e[1], 5, -165796510), c = i(c, d, a, b, e[6], 9, -1069501632), b = i(b, c, d, a, e[11], 14, 643717713), a = i(a, b, c, d, e[0], 20, -373897302), d = i(d, a, b, c, e[5], 5, -701558691), c = i(c, d, a, b, e[10], 9, 38016083), b = i(b, c, d, a, e[15], 14, -660478335), a = i(a, b, c, d, e[4], 20, -405537848), d = i(d, a, b, c, e[9], 5, 568446438), c = i(c, d, a, b, e[14], 9, -1019803690), b = i(b, c, d, a, e[3], 14, -187363961), a = i(a, b, c, d, e[8], 20, 1163531501), d = i(d, a, b, c, e[13], 5, -1444681467), c = i(c, d, a, b, e[2], 9, -51403784), b = i(b, c, d, a, e[7], 14, 1735328473), a = i(a, b, c, d, e[12], 20, -1926607734), d = h(a ^ b ^ c, d, a, e[5], 4, -378558), c = h(d ^ a ^ b, c, d, e[8], 11, -2022574463), b = h(c ^ d ^ a, b, c, e[11], 16, 1839030562), a = h(b ^ c ^ d, a, b, e[14], 23, -35309556), d = h(a ^ b ^ c, d, a, e[1], 4, -1530992060), c = h(d ^ a ^ b, c, d, e[4], 11, 1272893353), b = h(c ^ d ^ a, b, c, e[7], 16, -155497632), a = h(b ^ c ^ d, a, b, e[10], 23, -1094730640), d = h(a ^ b ^ c, d, a, e[13], 4, 681279174), c = h(d ^ a ^ b, c, d, e[0], 11, -358537222), b = h(c ^ d ^ a, b, c, e[3], 16, -722521979), a = h(b ^ c ^ d, a, b, e[6], 23, 76029189), d = h(a ^ b ^ c, d, a, e[9], 4, -640364487), c = h(d ^ a ^ b, c, d, e[12], 11, -421815835), b = h(c ^ d ^ a, b, c, e[15], 16, 530742520), a = h(b ^ c ^ d, a, b, e[2], 23, -995338651), d = j(d, a, b, c, e[0], 6, -198630844), c = j(c, d, a, b, e[7], 10, 1126891415), b = j(b, c, d, a, e[14], 15, -1416354905), a = j(a, b, c, d, e[5], 21, -57434055), d = j(d, a, b, c, e[12], 6, 1700485571), c = j(c, d, a, b, e[3], 10, -1894986606), b = j(b, c, d, a, e[10], 15, -1051523), a = j(a, b, c, d, e[1], 21, -2054922799), d = j(d, a, b, c, e[8], 6, 1873313359), c = j(c, d, a, b, e[15], 10, -30611744), b = j(b, c, d, a, e[6], 15, -1560198380), a = j(a, b, c, d, e[13], 21, 1309151649), d = j(d, a, b, c, e[4], 6, -145523070), c = j(c, d, a, b, e[11], 10, -1120210379), b = j(b, c, d, a, e[2], 15, 718787259), a = j(a, b, c, d, e[9], 21, -343485551); f[0] = k(d, f[0]); f[1] = k(a, f[1]); f[2] = k(b, f[2]); f[3] = k(c, f[3]) } function h(f, e, d, a, b, c) { e = k(k(e, f), k(a, c)); return k(e << b | e >>> 32 - b, d) } function g(f, e, d, a, b, c, g) { return h(e & d | ~e & a, f, e, b, c, g) } function i(f, e, d, a, b, c, g) { return h(e & a | d & ~a, f, e, b, c, g) } function j(f, e, d, a, b, c, g) { return h(d ^ (e | ~a), f, e, b, c, g) } function m(f) { var e = f; txt = ""; var d = e.length, f = [1732584193, -271733879, -1732584194, 271733878], a; for (a = 64; a <= e.length; a += 64) { for (var b = f, c = e.substring(a - 64, a), g = [], h = void 0, h = 0; h < 64; h += 4) g[h >> 2] = c.charCodeAt(h) + (c.charCodeAt(h + 1) << 8) + (c.charCodeAt(h + 2) << 16) + (c.charCodeAt(h + 3) << 24); l(b, g) } e = e.substring(a - 64); b = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; for (a = 0; a < e.length; a++) b[a >> 2] |= e.charCodeAt(a) << (a % 4 << 3); b[a >> 2] |= 128 << (a % 4 << 3); if (a > 55) { l(f, b); for (a = 0; a < 16; a++) b[a] = 0 } b[14] = d * 8; l(f, b); for (e = 0; e < f.length; e++) { d = f; a = e; b = f[e]; c = ""; for (g = 0; g < 4; g++) c += n[b >> g * 8 + 4 & 15] + n[b >> g * 8 & 15]; d[a] = c } return f.join("") } function k(f, e) { return f + e & 4294967295 } var n = "0123456789abcdef".split(""); m("hello") != "5d41402abc4b2a76b9719d911017c592" && (k = function (f, e) { var d = (f & 65535) + (e & 65535); return (f >> 16) + (e >> 16) + (d >> 16) << 16 | d & 65535 }); return m } ();
+
+	this.is_ = function (object, Type) {
 		if (typeof Type != 'function')
 			error('Parameter "Type" must be a function.');
-		switch (typeof obj) {
+		switch (typeof object) {
 			case 'object':
 			case 'function':
 			case 'undefined':
-				return obj instanceof Type;
+				return object instanceof Type;
 			default:
-				return new obj.constructor() instanceof Type;
+				return new object.constructor() instanceof Type;
 		}
 	};
 
-	this.foreach_ = function (arr, loop) {
+	this.for_ = function (array, loop) {
 		if (typeof loop != 'function')
 			error('The "loop" must be a function.');
-		for (var i = 0; i < arr.length; i++)
-			if (loop(arr[i], i) === false)
-				break;
+		if (!(array && array.length)) return;
+		for (var i = 0; i < array.length; i++)
+			if (loop(array[i], i, array.length) === false)
+				return false;
+		return true;
 	};
 
-	this.each_ = function (obj, loop) {
+	this.forin_ = function (object, loop) {
 		if (typeof loop != 'function')
 			error('The "loop" must be a function.');
-
-		for (var i in obj)
-			if (obj.hasOwnProperty(i))
-				if (loop(obj[i], i) === false)
-					break;
+		if (!object) return;
+		for (var i in object)
+			if (object.hasOwnProperty(i))
+				if (loop(object[i], i) === false)
+					return false;
+		return true;
 	};
 
 	this.enum_ = function () {
@@ -64,11 +73,10 @@
 	*/
 
 	(function () {
-		var global = this;
-
 		var nsinfos = createMap(); //namespace infos
 		var useinfos = createMap();
 		var sinfos = createMap(); //script infos
+		var shinfos = createMap(); //script hash infos
 		var dirs = createMap();
 
 		Namespace.call(global);
@@ -76,6 +84,11 @@
 		function namespace_(name, body) {
 			var that = this;
 			var dir = arguments[2];
+
+			if (typeof name != 'string')
+				error('The "name" needs to be a string.');
+			if (typeof body != 'function')
+				error('The "body" needs to be a function.');
 
 			name = getNSName(this, name);
 
@@ -88,7 +101,6 @@
 			else main();
 
 			function main() {
-
 				var nsinfo = nsinfos(name);
 				if (nsinfo) {
 					if (nsinfo.status == 1)
@@ -113,8 +125,14 @@
 				}
 				catch (e) { }
 
+				var upperNames = name.match(/[^\.]*(?=\.)/);
+				var upperNSs = [];
+				for_(upperNames, function (name) {
+					upperNSs.push(nsinfos(name).ns);
+				});
+
 				Namespace.call(ns);
-				body.call(ns);
+				body.apply(ns, upperNSs);
 
 				if (callQueue) {
 					var queue = nsinfo.queue;
@@ -171,7 +189,6 @@
 			function exec() {
 				body.apply(that, nsObjs);
 			}
-
 		}
 
 		function require_(url_args, opt_body) {
@@ -208,11 +225,20 @@
 				if (!sinfo) {
 					sinfo = sinfos(url, { ns: null, status: 0, queue: [] });
 					request(url, function (script) {
-						var name = global.eval(
-                            '0, function (namespace_) { return false || ' + script + ' }'
-                        )(function (name, body) {
-                        	return namespace_.call(global, name, body, getDir(url));
-                        });
+						var hash = md5(script);
+
+						var name = shinfos(hash);
+
+						if (!name) {
+							try {
+								name = global.eval('0, function (namespace_) { return false || ' + script + ' }')(function (name, body) {
+									return namespace_.call(global, name, body, getDir(url));
+								});
+							} catch (e) {
+								error('An error occured in file "' + url.substr(_dir.length) + '".', 1);
+							}
+							shinfos(hash, name);
+						}
 
 						global.use_(name, function (ns) {
 							sinfo.ns = ns;
@@ -319,7 +345,6 @@
 	*/
 
 	(function () {
-
 		//class part
 		(function () {
 			var infos = createMap();
@@ -448,11 +473,11 @@
 
 		function copy(from, to, overwrite) {
 			if (overwrite)
-				foreach_(from, function (v, i) {
+				forin_(from, function (v, i) {
 					to[i] = v;
 				});
 			else
-				foreach_(from, function (v, i) {
+				forin_(from, function (v, i) {
 					if (!(i in to)) to[i] = v;
 				});
 		}
@@ -555,7 +580,13 @@
 
 })();
 
+//CORE NAMESPACE
 
+namespace_('lang', function () {
+	this.isArray = function () {
+
+	};
+});
 
 
 
