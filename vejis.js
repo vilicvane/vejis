@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS 0.3
+    VEJIS 0.3.1
     by VILIC VANE
 
     NOT FOR RELEASE
@@ -7,7 +7,11 @@
 
 //VEJIS CORE
 (function () {
+	var ENABLE_LOGGING = true;
+
 	var global = this;
+
+	var log = ENABLE_LOGGING && console ? function (msg) { console.log('VEJIS log: ' + msg); } : function () { };
 
 	//for debugging
 	var _path = this.location.toString();
@@ -81,9 +85,22 @@
 
 		Namespace.call(global);
 
-		function namespace_(name, body) {
+		function namespace_(name, opt_body) {
 			var that = this;
-			var dir = arguments[2];
+
+			var body = opt_body || function () { };
+
+			var arg = arguments[2];
+			var dir;
+			var nss;
+
+			if (is_(arg, Value)) {
+				arg = arg.value;
+				if (typeof arg == 'string')
+					dir = arg;
+				else
+					nss = arg;
+			}
 
 			if (typeof name != 'string')
 				error('The "name" needs to be a string.');
@@ -125,9 +142,11 @@
 				}
 				catch (e) { }
 
-				var upperNames = name.match(/[^\.]*(?=\.)/);
+				var nsNames = nss || [];
+				Array.prototype.push.apply(nsNames, name.match(/[^\.]*(?=\.)/));
 				var upperNSs = [];
-				for_(upperNames, function (name) {
+
+				for_(nsNames, function (name) {
 					upperNSs.push(nsinfos(name).ns);
 				});
 
@@ -145,7 +164,7 @@
 			return name;
 		}
 
-		function use_(namespace_args, body) {
+		function use_(namespace_args, opt_body) {
 			var that = this;
 
 			var nss = [];
@@ -155,11 +174,27 @@
 					nss.push(getNSName(this, arguments[i]));
 				else
 					error('The "namespace_args" need to be strings.');
+			var last = arguments[i];
+			var body;
 
-			if (typeof arguments[i] != 'function')
-				error('The "body" needs to be a function.');
-			else
-				body = arguments[i];
+			switch (typeof last) {
+				case 'string':
+					nss.push(getNSName(this, last));
+					return {
+						namespace_: function (name, body) {
+							var args = nss.concat();
+							args.push(function () {
+								return namespace_.call(that, name, body, new Value(nss));
+							});
+							use_.apply(that, args);
+						}
+					};
+				case 'function':
+					body = last;
+					break;
+				default:
+					error('The "body" needs to be a function.');
+			}
 
 			var queueLen = 0;
 			var nsObjs = [];
@@ -220,22 +255,25 @@
 
 			for (var i = 0; i < urls.length; i++) (function (i) {
 				var url = getURL(urls[i], dir);
+				var path = url.substr(_dir.length);
 				var sinfo = sinfos(url);
 
 				if (!sinfo) {
 					sinfo = sinfos(url, { ns: null, status: 0, queue: [] });
+					log('Start loading file "' + path + '".');
 					request(url, function (script) {
+						log('File "' + path + '" loaded.');
 						var hash = md5(script);
-
 						var name = shinfos(hash);
 
 						if (!name) {
 							try {
 								name = global.eval('0, function (namespace_) { return false || ' + script + ' }')(function (name, body) {
-									return namespace_.call(global, name, body, getDir(url));
+									return namespace_.call(global, name, body, new Value(getDir(url)));
 								});
+								log('Namespace "' + name + '" created.');
 							} catch (e) {
-								error('An error occured in file "' + url.substr(_dir.length) + '".', 1);
+								error('An error occured in file "' + path + '".', 1);
 							}
 							shinfos(hash, name);
 						}
@@ -340,11 +378,72 @@
 		}
 	})();
 
-	/*
-	Class
-	*/
+	/* Method & Class */
 
 	(function () {
+		//method part
+		(function () {
+
+			this._ = function (fnBody) {
+				var sB;
+				var first = true;
+
+				var fn = function () {
+					if (first) {
+						delete fn.static_;
+						first = false;
+					}
+
+					var args = sB ? [sB] : [];
+					for_(arguments, function (arg) {
+						args.push(arg);
+					});
+					return fnBody.apply(this, args);
+				};
+
+				fn.static_ = function (staticBody) {
+					if (typeof staticBody != 'object')
+						error('The "staticBody" needs to be an object.');
+					delete fn.static_;
+					sB = staticBody;
+					return fn;
+				};
+
+				return fn;
+			};
+
+			/*
+			this._ = function (staticBody) {
+			if (typeof staticBody != 'function')
+			error('The "staticBody" needs to be a function.');
+
+			var realBody;
+
+			var o = {};
+
+			o._ = function (body) {
+			if (typeof body != 'function')
+			error('The "body" needs to be a function.');
+			delete o._;
+			realBody = body;
+			};
+
+			staticBody.call(o);
+
+			delete o._;
+
+			if (!realBody)
+			error('A function body is needed.');
+
+			var fn = function () {
+			return realBody.apply(this, arguments);
+			};
+
+			return fn;
+			};
+			*/
+		})();
+
 		//class part
 		(function () {
 			var infos = createMap();
@@ -505,6 +604,10 @@
 
 	})();
 
+	function Value(value) {
+		this.value = value;
+	}
+
 	/*
 	error
 	*/
@@ -579,14 +682,3 @@
 	}
 
 })();
-
-//CORE NAMESPACE
-
-namespace_('lang', function () {
-	this.isArray = function () {
-
-	};
-});
-
-
-
