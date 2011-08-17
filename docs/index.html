@@ -6,6 +6,19 @@
     <link href="main.css" rel="stylesheet" type="text/css" />
     <script src="main.js" type="text/javascript"></script>
     <script src="vlight.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-25148472-1']);
+		_gaq.push(['_setDomainName', 'vejis.org']);
+		_gaq.push(['_setAllowHash', 'false']);
+		_gaq.push(['_trackPageview']);
+
+		(function () {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
 </head>
 <body>
 <div id="page_wrapper">
@@ -16,17 +29,21 @@
         </a>
         <div id="nav">
             <a class="current" href="#">Introduction</a>
-            <a class="disabled" href="#">Get Started</a>
+            <!--
+			<a class="disabled" href="#">Get Started</a>
             <a class="disabled" href="#">Documentation</a>
-            <a href="https://github.com/vilic/vejis">Download</a>
+            -->
+			<a href="http://www.vilic.info/">My Blog</a>
+			<a href="https://github.com/vilic/vejis">Download</a>
+			<a href="http://www.vilic.info/blog/works/vejis">Feedback</a>
         </div>
-        <a id="donate" href="#">Donate</a>
+        <a id="donate" href="#" onclick="alert('Hey, thanks for click it! But I am not ready yet... lol.')">Donate</a>
         <div id="header_light"></div>
     </div>
     <div id="content_wrapper">
         <div class="title">What is VEJIS</div>
         <div class="content">
-            <p>VEJIS is a JavaScript library for "grammer level" enhancing. With VEJIS, one can easily create and use namespaces and define powerful VEJIS classes.</p>
+            <p>VEJIS is a JavaScript library for "grammar level" enhancing. With VEJIS, one can easily create and use namespaces and define powerful VEJIS classes.</p>
         </div>
         <div class="title">Namespace System</div>
         <div class="content">
@@ -34,24 +51,24 @@
             <p>That's accurately what VEJIS can bring to you!</p>
             <p>VEJIS namespace system provides 3 methods to create, load and use the related file and namespace.</p>
 <pre class="vlight">
-//create a namespace named "vejis".
-namespace_('vejis', function () {
+//create a namespace named "vilic".
+namespace_('vilic', function () {
     this.test = function () { };
 });
 
-//now we know the namespace "vejis" and function "test" are created immediately,
+//now we know the namespace "vilic" and function "test" are created immediately,
 //so, let's call the function "test".
-vejis.test();
+vilic.test();
 
 //sometimes, it may be hard to know when will the namespace be created,
 //but it would be very easy with "use_".
-use_('vejis', function (vejis) {
-    vejis.test();
+use_('vilic', function (vilic) {
+    vilic.test();
 });
 
 //what if a namespace is created in another file?
 //try this.
-require_('vejis.alpha.js', function (alpha) {
+require_('vilic.alpha.js', function (alpha) {
     //some other code.
 });
 </pre>
@@ -86,18 +103,38 @@ namespace_('vilic', function () {
     });
 });
 </pre>
+                    <p>But what about the arguments the "namespace_" send in? They, if exists, will be the parent namespaces, like below.</p>
+<pre class="vlight">
+namespace_('grand.parent.of.vilic', function (grand, parent, of) {
+    //this == vilic;
+	//grand == global.grand;
+	//parent == grand.parent;
+	//of == grand.parent.of;
+});
+</pre>
                 </li>
                 <li>
                     <b>use_(namespace : string [, namespace_args : string], body : function)</b><br />
                     <p>You can use one or more namespaces at the same time, and the namespace objects will be the parameters in order for "body" when callback.</p>
 <pre class="vlight">
-use_('vejis.aaa', 'vejis.bbb', function (aaa, bbb) {
-    //aaa == vejis.aaa;
-    //bbb == vejis.bbb;
+use_('vilic.aaa', 'vilic.bbb', function (aaa, bbb) {
+    //aaa == vilic.aaa;
+    //bbb == vilic.bbb;
 });
 </pre>
                     <p>The "use_" method won't send any request to get a script file. If the namespaces are not yet ready, it will add them to a queue, and once the namespaces needed are ready, the "body" will be called immediately.</p>
-                </li>
+                    <p>Then, how about use it like this?</p>
+<pre class="vlight">
+use_('dom', 'dom.event').
+namespace_('grand.parent.of.vilic', function (dom, event, grand, parent, of) {
+    //this == vilic;
+	//dom == global.dom;
+	//event = dom.event;
+	//grand == global.grand;
+	//parent == grand.parent;
+	//of == grand.parent.of;
+});
+				</li>
                 <li>
                     <b>require_(url : string [, url_args : string][, body : function])</b><br />
                     <p>The "require_" method will try to get the JS files and execute them, then, it's actually quite like "use_". But the JS file to require has some rules. It must be written like this.</p>
@@ -115,8 +152,38 @@ use_('somename', function (somename) {
     //code...
 });
 </pre>
+                    <p>And notice that the path is relative to the script file when you use "require_".</p>
+<pre class="vlight">
+//this is "dir/file-a.js"
+namespace('a', function () {
+    //code...
+});
+
+//this is "dir/file-b.js"
+namespace('b', function () {
+    //require a file-a.js, notice, without "dir/"
+	this.require_('file-a.js');
+});
+
+//this is a script file in root directory.
+require_('dir/file-b.js');
+</pre>
                 </li>
             </ul>
+            <p>You may want to debug sometimes, right? By now, it's still a simple part of VEJIS. But not that simple. On the one hand, VEJIS deals with stacks information on some browsers, and it will help you to locate the errors more efficiently. On the other hand, you can use "vejis.status" method to get some information about the namespaces and file requiring.</p>
+<pre class="vlight">
+//find out the status of your namespaces.
+//and it will log the information like below:
+//status - namespace name
+//"status" here stands for "created" or "waiting".
+vejis.status('namespace');
+
+//find out the status of your requiring.
+//and it will log the information like below:
+//status - file name
+//"status" here stands for "loaded", "loading", "load error" or "exec error".
+vejis.status('require');
+</pre>
         </div>
         <div class="title">Class Enhancing</div>
         <div class="content">
@@ -148,7 +215,7 @@ a.test(); //alert(123);
 </pre>
 				</li>
 				<li>
-					<b>Static private and public objects.</b><br />
+					<b>Static public and private objects.</b><br />
 <pre class="vlight">
 var A = class_(function (pub, pri) {
 	this.set = function (value) {
@@ -159,14 +226,14 @@ var A = class_(function (pub, pri) {
 		return pri.priValue;
 	};
 }).static_(function () {
-	//define static private properties, optional.
-	this.private_({
-		priValue: 'pri'
-	});
-
 	//define static public properties, optional.
 	this.public_({
 		pubValue: 'pub'
+	});
+
+	//define static private properties, optional.
+	this.private_({
+		priValue: 'pri'
 	});
 });
 
@@ -210,11 +277,27 @@ b.set(789);
 				</li>
 			</ul>
         </div>
+        <div class="title">Method Enhancing</div>
+        <div class="content">
+            <p>I was so cruel to it! And now it's no longer a powerful stuff of VEJIS. You can use it to create a method with static variables. I know it's simple.</p>
+<pre class="vlight">
+//the first argument is the static object, and it's private.
+var fn = _(function (st, n) {
+	console.log(st.count += n);
+}).static_({
+	count: 0
+});
+
+//get something to n.
+fn(1);
+fn(2);
+</pre>
+        </div>
         <div class="title">Something else</div>
         <div class="content">
-            <p>You may notice every method of vejis ends with a "_", I guess there might be many people who don't like this style, but they will. When VEJIS is created, as what was mentioned, its core function is method overloading. I wanted a mark that is brief and clean enough to create a VEJIS method, and finally I chose "_", the grammer was like this.</p>
+            <p>You may notice every method of vejis ends with a "_", I guess there might be many people who don't like this style, but they will. When VEJIS is created, as what was mentioned, its core function is method overloading. I wanted a mark that is brief and clean enough to create a VEJIS method, and finally I chose "_", the grammar was like this.</p>
 <pre class="vlight">
-//note, this function has already been removed, so, it's no longer available.
+//notice, this function has already been removed, so, it's no longer available.
 //as for why, I think it was that the overloading stuffs cost too much.
 
 //create a VEJIS method.
@@ -228,7 +311,7 @@ fn._(Boolean, function (b) {
 });
 </pre>
             <p>Actually, with that code, one is able to create a class with multiple constructors. But sometimes, the things we should change may be only lines, if we use a way like that, a constructor would need to be rewritten totally. So I wanted to create a function to solve this problems. You know that the word "class" is one of JavaScript's key word, so I simply added a "_", and made it "class_".</p>
-            <p>As VEJIS is a "grammer level" enhancing, there're chances that the words it use may conflict with some key words. So, the suffix "_" became a common rule for methods defined by VEJIS.</p>
+            <p>As VEJIS is a "grammar level" enhancing, there're chances that the words it use may conflict with some key words. So, the suffix "_" became a common rule for methods defined by VEJIS.</p>
         </div>
     </div>
     <div id="footer">©2011 VEJIS.ORG</div>

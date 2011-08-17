@@ -7,11 +7,29 @@
 
 //VEJIS CORE
 (function () {
-	var ENABLE_LOGGING = true;
-
 	var global = this;
 
-	var log = ENABLE_LOGGING && console ? function (msg) { console.log('VEJIS log: ' + msg); } : function () { };
+	var log = this.console ? function (msg) { console.log(msg); } : function () { };
+	var getNSStatus, getSStatus; //get namespace stauts & get script status
+
+	this.vejis = new function () {
+		this.status = function (name, toReturn) {
+			var status;
+			switch (name) {
+				case 'namespace':
+					status = getNSStatus();
+					break;
+				case 'require':
+					status = getSStatus();
+					break;
+				default:
+					break;
+			}
+			if (toReturn)
+				return status;
+			log(status || '- empty -');
+		};
+	} ();
 
 	//for debugging
 	var _path = this.location.toString();
@@ -39,7 +57,7 @@
 			error('The "loop" must be a function.');
 		if (!(array && array.length)) return;
 		for (var i = 0; i < array.length; i++)
-			if (loop(array[i], i, array.length) === false)
+			if (loop.call(this, array[i], i, array.length) === false)
 				return false;
 		return true;
 	};
@@ -50,7 +68,7 @@
 		if (!object) return;
 		for (var i in object)
 			if (object.hasOwnProperty(i))
-				if (loop(object[i], i) === false)
+				if (loop.call(this, object[i], i) === false)
 					return false;
 		return true;
 	};
@@ -85,10 +103,46 @@
 
 		Namespace.call(global);
 
+		getNSStatus = function () {
+			var strs = [];
+			nsinfos.each(function (info, name) {
+				strs.push((info.status ? 'created' : 'waiting') + ' - ' + name);
+			});
+			strs.sort();
+			return strs.join('\n');
+		};
+
+		getSStatus = function () {
+			var strs = [];
+			sinfos.each(function (info, url) {
+				var path = url.indexOf(_dir) == 0 ? url.substr(_dir.length) : url;
+				var st;
+
+				switch (info.status) {
+					case 1:
+						st = 'loaded';
+						break;
+					case 0:
+						st = 'loading';
+						break;
+					case -1:
+						st = 'load error';
+						break;
+					case -2:
+						st = 'exec error';
+						break;
+				}
+
+				strs.push(st + ' - ' + path);
+			});
+			strs.sort();
+			return strs.join('\n');
+		};
+
 		function namespace_(name, opt_body) {
 			var that = this;
 
-			var body = opt_body || function () { };
+			var body = opt_body || {};
 
 			var arg = arguments[2];
 			var dir;
@@ -104,8 +158,8 @@
 
 			if (typeof name != 'string')
 				error('The "name" needs to be a string.');
-			if (typeof body != 'function')
-				error('The "body" needs to be a function.');
+			if (typeof body != 'function' && typeof body != 'object')
+				error('The "body" needs to be a function or an object.');
 
 			name = getNSName(this, name);
 
@@ -142,16 +196,24 @@
 				}
 				catch (e) { }
 
-				var nsNames = nss || [];
-				Array.prototype.push.apply(nsNames, name.match(/[^\.]*(?=\.)/));
-				var upperNSs = [];
+				if (typeof body == 'function') {
+					var nsNames = nss || [];
+					Array.prototype.push.apply(nsNames, name.match(/[^\.]*(?=\.)/));
+					var upperNSs = [];
 
-				for_(nsNames, function (name) {
-					upperNSs.push(nsinfos(name).ns);
-				});
+					for_(nsNames, function (name) {
+						upperNSs.push(nsinfos(name).ns);
+					});
 
-				Namespace.call(ns);
-				body.apply(ns, upperNSs);
+					Namespace.call(ns);
+					body.apply(ns, upperNSs);
+				}
+				else {
+					Namespace.call(ns);
+					forin_(body, function (value, i) {
+						ns[i] = value;
+					});
+				}
 
 				if (callQueue) {
 					var queue = nsinfo.queue;
@@ -255,14 +317,17 @@
 
 			for (var i = 0; i < urls.length; i++) (function (i) {
 				var url = getURL(urls[i], dir);
-				var path = url.substr(_dir.length);
+				var path = url.indexOf(_dir) == 0 ? url.substr(_dir.length) : url;
 				var sinfo = sinfos(url);
 
 				if (!sinfo) {
 					sinfo = sinfos(url, { ns: null, status: 0, queue: [] });
-					log('Start loading file "' + path + '".');
-					request(url, function (script) {
-						log('File "' + path + '" loaded.');
+					request(url, function (script, done) {
+						if (!done) {
+							sinfo.status = -1;
+							return;
+						}
+
 						var hash = md5(script);
 						var name = shinfos(hash);
 
@@ -271,14 +336,15 @@
 								name = global.eval('0, function (namespace_) { return false || ' + script + ' }')(function (name, body) {
 									return namespace_.call(global, name, body, new Value(getDir(url)));
 								});
-								log('Namespace "' + name + '" created.');
 							} catch (e) {
+								sinfo.status = -2;
 								error('An error occured in file "' + path + '".', 1);
 							}
 							shinfos(hash, name);
 						}
 
 						global.use_(name, function (ns) {
+							sinfo.status = 1;
 							sinfo.ns = ns;
 							var queue = sinfo.queue;
 							for (var j = 0; j < queue.length; j++)
@@ -316,8 +382,12 @@
 			xhr.send(null);
 
 			xhr.onreadystatechange = function () {
-				if (xhr.readyState == 4 && (xhr.status == 200 || xhr.status == 304))
-					callback(xhr.responseText);
+				if (xhr.readyState == 4) {
+					if (xhr.status == 200 || xhr.status == 304)
+						callback(xhr.responseText, true);
+					else
+						callback(null, false);
+				}
 			};
 		}
 
@@ -367,12 +437,18 @@
 		function createMap() {
 			var map = {};
 
-			function fn(key, value) {
+			var fn = function (key, value) {
 				if (arguments.length == 1)
 					return map['#' + key];
 				else if (arguments.length == 2)
 					return map['#' + key] = value;
-			}
+			};
+
+			fn.each = function (loop) {
+				forin_(map, function (value, key) {
+					loop(value, key.substr(1));
+				});
+			};
 
 			return fn;
 		}

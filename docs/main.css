@@ -1,11 +1,5 @@
-﻿@font-face { font-family: 'Eras Demi ITC'; src: url('fonts/erasdemi.eot'); }
-@font-face { font-family: 'Eras Demi ITC'; src: url('fonts/erasdemi.ttf'); }
-@font-face { font-family: 'Eras Light ITC'; src: url('fonts/eraslght.eot'); }
-@font-face { font-family: 'Eras Light ITC'; src: url('fonts/eraslght.ttf'); }
-
-
-html {
-}
+﻿@font-face { font-family: "Eras Demi ITC"; src: local("Eras Demi ITC"), url("fonts/erasdemi.ttf"), url("fonts/erasdemi.eot"); }
+@font-face { font-family: "Eras Light ITC"; src: local("Eras Light ITC"), url("fonts/eraslght.ttf"), url("fonts/eraslght.eot"); }
 
 body {
     margin: 0px;
@@ -36,6 +30,7 @@ a#logo {
     left: 40px; top: 10px;
     width: 120px; height: 60px;
     text-decoration: none;
+    cursor: pointer;
 }
 
 a#logo span {
