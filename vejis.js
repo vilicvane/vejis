@@ -613,7 +613,7 @@
 
                     staticBody.call(o);
                 }
-                else copy(priBody, pri, overwrite);
+                else copy(staticBody, pri, overwrite);
             }
         })();
 

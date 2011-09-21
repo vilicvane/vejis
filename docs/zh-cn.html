@@ -10,17 +10,17 @@
     <script src="main.js" type="text/javascript"></script>
     <script src="vlight.js" type="text/javascript"></script>
 	<script type="text/javascript">
-		var _gaq = _gaq || [];
-		_gaq.push(['_setAccount', 'UA-25148472-1']);
-		_gaq.push(['_setDomainName', 'vejis.org']);
-		_gaq.push(['_setAllowHash', 'false']);
-		_gaq.push(['_trackPageview']);
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-25148472-1']);
+    _gaq.push(['_setDomainName', 'vejis.org']);
+    _gaq.push(['_setAllowHash', 'false']);
+    _gaq.push(['_trackPageview']);
 
-		(function () {
-			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-		})();
+    (function () {
+    	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
 	</script>
 </head>
 <body>
@@ -33,13 +33,13 @@
         <div id="nav">
             <a class="current" href="#">简介</a>
             <!--
-			<a class="disabled" href="#">Get Started</a>
+    	<a class="disabled" href="#">Get Started</a>
             <a class="disabled" href="#">Documentation</a>
             -->
-			<a href="http://www.vilic.info/">我的博客</a>
-			<a href="https://github.com/vilic/vejis">下载</a>
-			<a href="http://www.vilic.info/blog/works/vejis">反馈</a>
-			<a href="index.html">English</a>
+    	<a href="http://www.vilic.info/">我的博客</a>
+    	<a href="https://github.com/vilic/vejis">下载</a>
+    	<a href="http://www.vilic.info/blog/works/vejis">反馈</a>
+    	<a href="index.html">English</a>
         </div>
         <!--<a id="donate" href="#" onclick="alert('嗨, 谢啦! 但我还没准备好... 囧.')">捐赠</a>-->
         <div id="header_light"></div>
@@ -139,7 +139,7 @@ namespace_('grand.parent.of.vilic', function (dom, event, grand, parent, of) {
 	//of == grand.parent.of;
 });
 </pre>
-				</li>
+        </li>
                 <li>
                     <b>require_(url : string [, url_args : string][, body : function])</b><br />
                     <p>"require_" 方法会尝试加载JS文件并执行它们, 其实, 它很像 "use_". 但是, 被加载的JS文件是有规范的. 它必须像这样书写.</p>
@@ -194,14 +194,14 @@ vejis.status('require');
         <div class="content">
             <p>实际上, 这是老一些的VEJIS的核心功能. 而又在此之前, VEJIS是主打函数重载的, 但在现在的VEJIS中, 函数重载功能已经全部删除了. 但VEJIS对类的加强从来没有削减.</p>
             <p>VEJIS的类有如下特点.</p>
-			<ul>
-				<li>
-					<b>基本的使用方式.</b><br />
+    	<ul>
+        <li>
+        	<b>基本的使用方式.</b><br />
 <pre class="vlight">
 var A = class_(function () {
 	//定义构造函数.
 	this._(function (value) {
-		this.value = value;
+    this.value = value;
 	});
 
 	//定义一个属性.
@@ -209,7 +209,7 @@ var A = class_(function () {
 
 	//定义一个方法.
 	this.test = function () {
-		alert(this.value);
+    alert(this.value);
 	};
 });
 
@@ -218,27 +218,27 @@ var a = new A(123);
 
 a.test(); //alert(123);
 </pre>
-				</li>
-				<li>
-					<b>静态的公有和私有对象.</b><br />
+        </li>
+        <li>
+        	<b>静态的公有和私有对象.</b><br />
 <pre class="vlight">
 var A = class_(function (pub, pri) {
 	this.set = function (value) {
-		pri.priValue = value || 456;
+    pri.priValue = value || 456;
 	};
 
 	this.get = function () {
-		return pri.priValue;
+    return pri.priValue;
 	};
 }).static_(function () {
 	//定义静态公有属性, 可选.
 	this.public_({
-		pubValue: 'pub'
+    pubValue: 'pub'
 	});
 
 	//定义静态私有属性, 可选.
 	this.private_({
-		priValue: 'pri'
+    priValue: 'pri'
 	});
 });
 
@@ -258,10 +258,10 @@ var C = class_(function (pub, pri) {
     priValue: 'pri'
 });
 </pre>
-					<p>你或许注意到了静态公有对象 "pub", 它和 "A", 也即对应的类之间并不完全等同. 实际上是当这个类是被继承的父类时, 会有不同. 但, 在类中, 我们应该总是使用 "pub" 而不是 "A" 去访问静态公有对象.</p>
-				</li>
-				<li>
-					<b>继承.</b><br />
+        	<p>你或许注意到了静态公有对象 "pub", 它和 "A", 也即对应的类之间并不完全等同. 实际上是当这个类是被继承的父类时, 会有不同. 但, 在类中, 我们应该总是使用 "pub" 而不是 "A" 去访问静态公有对象.</p>
+        </li>
+        <li>
+        	<b>继承.</b><br />
 <pre class="vlight">
 var B = class_(function (pub, pri) {
 	this.getFromB = function () { return pri.priValue; };
@@ -278,9 +278,9 @@ b.set(789);
 //b.get() == 789;
 //b.getFromB() == 789;
 </pre>
-					<p>这个例子展示了在 "A", "B" 两个类中, 静态私有对象的关系: <b>它们是互相独立的</b>. 静态公有对象也是如此. 所以, 不要担心你在子类对于这两个对象的更改会影响父类 (前提是, 你是使用的 "pub" 和 "pri").</p>
-				</li>
-			</ul>
+        	<p>这个例子展示了在 "A", "B" 两个类中, 静态私有对象的关系: <b>它们是互相独立的</b>. 静态公有对象也是如此. 所以, 不要担心你在子类对于这两个对象的更改会影响父类 (前提是, 你是使用的 "pub" 和 "pri").</p>
+        </li>
+    	</ul>
         </div>
         <div class="title">方法加强</div>
         <div class="content">
