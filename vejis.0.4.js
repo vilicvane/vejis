@@ -76,25 +76,24 @@ function () {
         throw new Error(msg);
     }
 
-    /* DEFINES */
-    function PlainObject() { }
+    //log
+    function log(msg) {
+        if (global.console)
+            console.log(msg);
+    }
 
-    var isRules = [
-        function (object, Type) {
-            return Type == PlainObject && typeof object == "object" && object.constructor == Object;
-        }
-    ];
+    /* DEFINES */
+    function PlainObject() { return {}; }
 
     //determine weather an object is an instance of a class
     function is_(object, Type) {
         if (typeof Type != "function")
             error('the "Type" must be a function.');
 
-        for (var i = 0; i < isRules.length; i++)
-            if (isRules[i](object, Type))
-                return true;
+        if (Type == PlainObject && typeof object == "object" && object && object.constructor == Object)
+            return true;
 
-        if (object === null) return true;
+        if (Type === Object) return true;
 
         switch (typeof object) {
             case "object":
@@ -204,6 +203,7 @@ function () {
                 var Types = [];
 
                 var lastIndex = arguments.length - 1;
+                var paramsIndex;
 
                 for (var i = 0; i < lastIndex; i++) {
                     var arg = arguments[i];
@@ -212,15 +212,25 @@ function () {
 
                     if (arg.prototype == Option.prototype) (function (args) {
                         var values = [];
-                        for (var j = i; j < lastIndex; j++)
-                            values.push(args[j].value);
+                        for (var j = i; j < lastIndex; j++) {
+                            try {
+                                values.push(args[j].value);
+                            }
+                            catch (e) {
+                                alert(args.join("\n"));
+                            }
+                        }
 
                         method._.apply(that, Types.concat(function () {
-                            var args = [];
-                            for (var i = 0; i < arguments.length; i++)
-                                args.push(arguments[i]);
-                            push.apply(args, values);
-                            return method.apply(this, args);
+                            var rArgs = [];
+                            for (var k = 0; k < arguments.length; k++) {
+                                if (k == paramsIndex)
+                                    push.apply(rArgs, arguments[k]);
+                                else
+                                    rArgs.push(arguments[k]);
+                            }
+                            push.apply(rArgs, values);
+                            return method.apply(this, rArgs);
                         }));
 
                         arg = arg.Type;
@@ -233,7 +243,10 @@ function () {
                 if (typeof fn != "function")
                     return error("fn must be a function");
 
-                overloads.addOverload(fn, Types);
+                var list = new TypeList(Types);
+                paramsIndex = list.paramsIndex;
+
+                overloads.addOverload(fn, list);
             };
 
             if (arguments.length > 0)
@@ -247,18 +260,29 @@ function () {
             //the class name "Params" here is for debugging
             //so that, when something went wrong, you can see
             //it's a params type
-            var ParamsType = function Params() { };
+            var ParamsType = function () { return function Params() { }; } ();
             ParamsType.prototype = Params.prototype;
             ParamsType.Type = Type;
             return ParamsType;
         }
 
         function option_(Type, value) {
-            if (arguments.length == 1)
-                value = null;
+            if (arguments.length == 1) {
+                switch (Type) {
+                    case Number:
+                        value = 0;
+                        break;
+                    case String:
+                        value = "";
+                        break;
+                    default:
+                        value = new Type();
+                        break;
+                }
+            }
             if (!is_(value, Type))
-                return error("the doesn't match the type given");
-            var OptionType = function Option() { };
+                return error("the value doesn't match the type given");
+            var OptionType = function () { return function Option() { }; } ();
             OptionType.prototype = Option.prototype;
             OptionType.Type = Type;
             OptionType.value = value;
@@ -272,9 +296,9 @@ function () {
 
         function Overloads() {
             var lists = [];
+            //var hasParamsIndex = 0;
 
-            this.addOverload = function (fn, Types) {
-                var nList = new TypeList(Types);
+            this.addOverload = function (fn, nList) {
                 for (var i = 0; i < lists.length; i++) {
                     var list = lists[i].typeList;
                     if (!canBeDistinguished(list, nList))
@@ -672,7 +696,7 @@ function () {
                     }
                 };
 
-                staticBody.call(o);
+                staticBody.call(o, pub, pri);
             }
             else copy(staticBody, pri, overwrite);
         }
@@ -731,6 +755,8 @@ function () {
         var module_ = _(String, Array, Function, function (name, attaches, body) {
             if (readyModules(name))
                 return console.warn('module "' + name + '" already loaded');
+
+            log('loaded module "' + name + '"');
 
             var module = readyModules(name, {});
             body.apply(module, attaches);
@@ -822,14 +848,20 @@ function () {
         });
 
         //require a file
+        var requiredFiles = {};
+
         var require_ = _(params_(String), function (files) {
             var head = document.getElementsByTagName("head")[0];
             for_(files, function (file) {
+                if (hasOwnProperty.call(requiredFiles, file))
+                    return;
+
+                requiredFiles[file] = true;
                 var script = document.createElement("script");
                 script.async = "async";
                 script.src = file;
                 head.insertBefore(script, head.firstChild);
-                head.removeChild(script);
+                //setTimeout(function () { head.removeChild(script); }, 0);
             });
         });
 
