@@ -17,12 +17,13 @@ function () {
     var splice = Array.prototype.splice;
     var push = Array.prototype.push;
 
-    if (!global.console)
-        var console = {
+    if (!global.console) {
+        global.console = {
             log: function () { },
             warn: function () { },
             error: function () { }
         };
+    }
 
     ////////////////////
     // COMMON METHODS //
@@ -334,6 +335,9 @@ function () {
                         break;
                     case String:
                         value = "";
+                        break;
+                    case Boolean:
+                        value = false;
                         break;
                     default:
                         value = new Type();
