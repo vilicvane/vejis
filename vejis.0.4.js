@@ -17,6 +17,13 @@ function () {
     var splice = Array.prototype.splice;
     var push = Array.prototype.push;
 
+    if (!global.console)
+        var console = {
+            log: function () { },
+            warn: function () { },
+            error: function () { }
+        };
+
     ////////////////////
     // COMMON METHODS //
     ////////////////////
@@ -84,16 +91,46 @@ function () {
 
     /* DEFINES */
     function PlainObject() { return {}; }
+    function IList() { return []; }
+
+    function Params() { }
+    function TypedList() { }
+    function Option() { }
 
     //determine weather an object is an instance of a class
     function is_(object, Type) {
         if (typeof Type != "function")
             error('the "Type" must be a function.');
 
-        if (Type == PlainObject && typeof object == "object" && object && object.constructor == Object)
-            return true;
+        if (object) {
+            if (Type == PlainObject && typeof object == "object" && object.constructor == Object)
+                return true;
+
+            if (Type === IList) {
+                var length = object.length;
+                if (typeof length == "number") {
+                    if (length)
+                        return object.hasOwnProperty(0) && object.hasOwnProperty(length - 1);
+                    else return true;
+                }
+            }
+
+            if (Type.prototype == TypedList.prototype) {
+                if (!is_(object, IList)) return false;
+
+                return for_(object, function (item) {
+                    if (!is_(item, Type.Type))
+                        return false;
+                });
+            }
+
+            var vejisType = object.__vejisType__;
+            if (vejisType && (vejisType == Type || vejisType.prototype instanceof Type || vejisType.prototype == Type.prototype))
+                return true;
+        }
 
         if (Type === Object) return true;
+
 
         switch (typeof object) {
             case "object":
@@ -110,9 +147,15 @@ function () {
             error('the "loop" must be a function.');
         if (!(array && array.length))
             return true;
-        for (var i = 0; i < array.length; i++)
-            if (loop.call(this, array[i], i, array.length) === false)
+        for (var i = 0; i < array.length; ) {
+            var result = loop(array[i], i, array.length);
+            if (result === false)
                 return false;
+            else if (typeof result == "number")
+                i += result;
+            else
+                i++;
+        }
         return true;
     }
 
@@ -123,7 +166,7 @@ function () {
             return true;
         for (var i in object)
             if (hasOwnProperty.call(object, i))
-                if (loop.call(this, object[i], i) === false)
+                if (loop(object[i], i) === false)
                     return false;
         return true;
     }
@@ -148,6 +191,7 @@ function () {
 
     /* SIGN TO GLOBAL */
     global.PlainObject = PlainObject;
+    global.IList = IList;
     global.is_ = is_;
     global.for_ = for_;
     global.forin_ = forin_;
@@ -205,21 +249,19 @@ function () {
                 var lastIndex = arguments.length - 1;
                 var paramsIndex;
 
+                var optionExists = false;
+
                 for (var i = 0; i < lastIndex; i++) {
                     var arg = arguments[i];
                     if (typeof arg != "function")
                         return error("type must be a function");
 
                     if (arg.prototype == Option.prototype) (function (args) {
+                        optionExists = true;
+
                         var values = [];
-                        for (var j = i; j < lastIndex; j++) {
-                            try {
-                                values.push(args[j].value);
-                            }
-                            catch (e) {
-                                alert(args.join("\n"));
-                            }
-                        }
+                        for (var j = i; j < lastIndex; j++)
+                            values.push(args[j].value);
 
                         method._.apply(that, Types.concat(function () {
                             var rArgs = [];
@@ -235,6 +277,8 @@ function () {
 
                         arg = arg.Type;
                     })(arguments);
+                    else if (optionExists)
+                        error("option_ can only be used at the lasts of parameters");
 
                     Types.push(arg);
                 }
@@ -247,6 +291,13 @@ function () {
                 paramsIndex = list.paramsIndex;
 
                 overloads.addOverload(fn, list);
+
+                if (paramsIndex >= 0) {
+                    Types = Types.concat();
+                    Types[paramsIndex] = list_(Types[paramsIndex].Type);
+                    list = new TypeList(Types);
+                    overloads.addOverload(fn, list, false);
+                }
             };
 
             if (arguments.length > 0)
@@ -266,6 +317,15 @@ function () {
             return ParamsType;
         }
 
+        //list
+        function list_(Type) {
+            var TypedListType = function () { return function TypedList() { }; } ();
+            TypedListType.prototype = TypedList.prototype;
+            TypedListType.Type = Type;
+            return TypedListType;
+        }
+
+        //option
         function option_(Type, value) {
             if (arguments.length == 1) {
                 switch (Type) {
@@ -292,17 +352,23 @@ function () {
         /* SIGN TO GLOBAL */
         global._ = _;
         global.params_ = params_;
+        global.list_ = list_;
         global.option_ = option_;
 
         function Overloads() {
             var lists = [];
             //var hasParamsIndex = 0;
 
-            this.addOverload = function (fn, nList) {
+            this.addOverload = function (fn, nList, force) {
                 for (var i = 0; i < lists.length; i++) {
                     var list = lists[i].typeList;
-                    if (!canBeDistinguished(list, nList))
-                        return error("the adding overload can't be distinguished from existing ones.");
+                    if (!canBeDistinguished(list, nList)) {
+                        if (force == false)
+                            console.log("ignored an overload can't be distinguished from existing ones.");
+                        else
+                            error("the adding overload can't be distinguished from existing ones.");
+                        return;
+                    }
                 }
 
                 lists.push({
@@ -553,7 +619,25 @@ function () {
         function isRelatedTypes(TypeA, TypeB) {
             return (
                 TypeA.prototype instanceof TypeB || TypeA.prototype == TypeB.prototype ||
-                TypeB.prototype instanceof TypeA || TypeB.prototype == TypeA.prototype
+                TypeB.prototype instanceof TypeA || TypeB.prototype == TypeA.prototype ||
+                function () {
+                    var exists = false;
+
+                    var Types = [IList, TypedList, Array];
+
+                    for (var i = 0; i < arguments.length; i++) {
+                        var arg = arguments[i];
+                        for (var j = 0; j < Types.length; j++) {
+                            if (Types[j] == arg) {
+                                if (exists)
+                                    return true;
+                                else
+                                    exists = true;
+                            }
+                        }
+                        return false;
+                    }
+                } ()
             );
         }
 
@@ -562,12 +646,6 @@ function () {
             this.paramsIndex = getIndexOfParams(Types);
             this.ParamsType = this.paramsIndex < 0 ? null : Types[this.paramsIndex].Type;
         }
-
-        //a base class, see "params_" method
-        function Params() { }
-
-        //a base class, see "option_" method
-        function Option() { }
     } ();
 
 
@@ -583,7 +661,7 @@ function () {
 
         //create a class
         var class_ = _(Function, function (body) {
-            var BaseClass, staticBody, ClassBody;
+            var staticBody, ClassBody;
             ClassBody = body;
 
             var pri = {};
@@ -607,19 +685,16 @@ function () {
                 var that = this;
 
                 var ClassBodys = [];
-                var baseInfo = info.baseInfo;
+                var baseInfo = info;
 
-                if (baseInfo) {
-                    do
-                        ClassBodys.unshift(baseInfo.ClassBody);
-                    while (baseInfo = baseInfo.baseInfo);
-                }
+                while (baseInfo = baseInfo.baseInfo)
+                    ClassBodys.unshift(baseInfo.ClassBody);
 
                 for_(ClassBodys, function (body) {
                     that._ = function () {
                         delete this._;
                     };
-                    body.call(this, C, pri);
+                    body.call(that, C, pri);
                 });
 
                 var constructor;
@@ -652,7 +727,7 @@ function () {
 
             C.inherit_ = _(Function, function (Class) {
                 delete C.inherit_;
-                info.BaseClass = BaseClass = Class;
+
                 C.prototype = Class.prototype;
 
                 var baseInfo = infos(Class);
@@ -662,6 +737,11 @@ function () {
                     do
                         buildStatic(C, pri, baseInfo.staticBody, false);
                     while (baseInfo = baseInfo.baseInfo);
+                }
+                else {
+                    info.baseInfo = {
+                        ClassBody: Class
+                    };
                 }
 
                 return C;
@@ -704,9 +784,9 @@ function () {
     } ();
 
 
-    ///////////////
-    // NAMESPACE //
-    ///////////////
+    ////////////
+    // MODULE //
+    ////////////
 
     "module",
     function () {
