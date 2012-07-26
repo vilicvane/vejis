@@ -395,11 +395,7 @@ function () {
                 }
 
                 try {
-                    setTimeout(function () {
-                        var newO = {};
-                        copy(o, newO);
-                        fn.apply(newO, values);
-                    }, 0);
+                    fn.apply(o, values);
                 } catch (e) { }
                 /* IS PART END */
             };
