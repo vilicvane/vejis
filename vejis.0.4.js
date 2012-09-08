@@ -187,7 +187,7 @@ function () {
         function Enum(name) {
             this.toString = function () { return name; };
         }
-    };
+    }
 
 
     /* SIGN TO GLOBAL */
