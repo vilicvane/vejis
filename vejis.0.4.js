@@ -670,7 +670,6 @@ function () {
 
             var pri = {};
             var info = {
-                pri: pri,
                 ClassBody: ClassBody,
                 staticBody: null,
                 baseInfo: null
@@ -696,7 +695,6 @@ function () {
 
                 for_(ClassBodys, function (body) {
                     that._ = function () {
-                        delete this._;
                     };
                     body.call(that, C, pri);
                 });
