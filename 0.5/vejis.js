@@ -82,14 +82,14 @@ function () {
     function isType(Type) {
         return (
             typeof Type == "function" ||
-            typeof Type == "object" && Type && !!Type.__isInstance__
+            typeof Type == "object" && !!Type && !!Type.__isInstance__
         );
     }
 
     function isTypeMark(TypeMark) {
         return (
             typeof TypeMark == "object" &&
-            TypeMark && typeof TypeMark.type == "number"
+            !!TypeMark && typeof TypeMark.type == "number"
         );
     }
 
@@ -205,6 +205,13 @@ function () {
                 }
                 delegate.RelatedThisType = Type;
                 delete delegate.with_;
+                delete delegate.bind_;
+                return delegate;
+            },
+            bind_: function (object) {
+                delegate.relatedThisObject = { value: object };
+                delete delegate.with_;
+                delete delegate.bind_;
                 return delegate;
             },
             as_: function (Type) {
@@ -271,6 +278,14 @@ function () {
                 }
                 overload.ThisType = Type;
                 delete method.with_;
+                delete method.bind_;
+                return method;
+            };
+
+            method.bind_ = function (object) {
+                overload.thisObject = { value: object };
+                delete method.with_;
+                delete method.bind_;
                 return method;
             };
 
@@ -301,6 +316,7 @@ function () {
 
     function Overload(Types, fn) {
         this.Types = Types;
+        this.thisObject = undefined;
         this.ThisType = undefined;
         this.ReturnType = undefined;
         this.staticObject = undefined;
@@ -321,7 +337,7 @@ function () {
             var paramType =
                 typeof Type == "function" ?
                     ParamType.normal :
-                    Type ? Type.type : undefined;
+                    Type ? Type.type || ParamType.normal: undefined;
                 
             switch (paramType) {
                 case ParamType.normal:
@@ -367,6 +383,9 @@ function () {
             if (this.ThisType && !is_(thisArg, this.ThisType))
                 return result;
 
+            if (this.thisObject)
+                thisArg = this.thisObject.value;
+
             var diff = args.length - required.length;
 
             if (
@@ -389,7 +408,9 @@ function () {
 
                 if (Type.type == ParamType.delegate) {
                     arg = _.apply(this, Type.RelatedTypes.concat(arg));
-                    if (Type.RelatedThisType)
+                    if (Type.relatedThisObject)
+                        arg.bind_(Type.relatedThisObject.value);
+                    else if (Type.RelatedThisType)
                         arg.with_(Type.RelatedThisType);
                     if (Type.RelatedReturnType)
                         arg.as_(Type.RelatedReturnType);
@@ -413,7 +434,9 @@ function () {
 
                 if (Type.type == ParamType.delegate) {
                     arg = _.apply(this, Type.RelatedTypes.concat(arg));
-                    if (Type.RelatedThisType)
+                    if (Type.relatedThisObject)
+                        arg.bind_(Type.relatedThisObject.value);
+                    else if (Type.RelatedThisType)
                         arg.with_(Type.RelatedThisType);
                     if (Type.RelatedReturnType)
                         arg.as_(Type.RelatedReturnType);
@@ -440,7 +463,9 @@ function () {
 
                     if (Type.type == ParamType.delegate) {
                         arg = _.apply(this, Type.RelatedTypes.concat(arg));
-                        if (Type.RelatedThisType)
+                        if (Type.relatedThisObject)
+                            arg.bind_(Type.relatedThisObject.value);
+                        else if (Type.RelatedThisType)
                             arg.with_(Type.RelatedThisType);
                         if (Type.RelatedReturnType)
                             arg.as_(Type.RelatedReturnType);
@@ -461,7 +486,9 @@ function () {
 
                 if (Type.type == ParamType.delegate) {
                     arg = _.apply(this, Type.RelatedTypes.concat(arg));
-                    if (Type.RelatedThisType)
+                    if (Type.relatedThisObject)
+                        arg.bind_(Type.relatedThisObject.value);
+                    else if (Type.RelatedThisType)
                         arg.with_(Type.RelatedThisType);
                     if (Type.RelatedReturnType)
                         arg.as_(Type.RelatedReturnType);
@@ -530,7 +557,11 @@ function () {
         };
     }
 
-    function Type() { }
+    function Type() {
+        return {
+            __relatedInstance__: function () { }
+        };
+    }
     Type.__isInstance__ = function (object) {
         return isType(object);
     };
@@ -570,9 +601,10 @@ function () {
         return true;
     }
 
-    global.for_ = _(IList, Function, for_).as_(Boolean);
-    global.forin_ = _(Object, Function, forin_).as_(Boolean);
-    global.enum_ = _(params_(String), function (items) {
+    global.for_ = _(IList, delegate_(Object, Integer, Integer), for_).as_(Boolean);
+    global.forin_ = _(Object, delegate_(Object, String), forin_).as_(Boolean);
+
+    function enum_(items) {
         var count = items.length;
 
         if (count > 32) {
@@ -596,6 +628,13 @@ function () {
         for (var i = 0; i < count; i++)
             var ele = Enum[items[i]] = new Enum(items[i], 1 << i);
 
+        return Enum;
+    }
+
+    global.enum_ = _(params_(String), enum_);
+    global.enum_._(String, TypedList(String), function (name, items) {
+        var Enum = enum_(items);
+        Enum.__name__ = name;
         return Enum;
     });
 
@@ -733,6 +772,38 @@ function () {
 
         staticBody.call(o, pub, pri);
     }
+
+    global.interface_ = _(opt_(nul_(String)), PlainObject, function (name, body) {
+        var list = [];
+
+        for (var i in body) {
+            if (hasOwnProperty.call(body, i)) {
+                var Type = body[i];
+                list.push({
+                    name: i,
+                    Type: Type
+                });
+            }
+        }
+
+        var Interface = {
+            __isInstance__: function (object) {
+                if (!object) return false;
+
+                for (var i = 0; i < list.length; i++) {
+                    var item = list[i];
+                    if (!is_(object[item.name], item.Type))
+                        return false;
+                }
+
+                return true;
+            }
+        };
+
+        Interface.__name__ = name;
+
+        return Interface;
+    });
 
     /* VEJIS MODULE SYSTEM */
 
