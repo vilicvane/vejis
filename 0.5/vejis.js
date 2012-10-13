@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.121011
+    VEJIS JavaScript Framework v0.5.0.121013
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -142,7 +142,8 @@ function () {
         return {
             type: ParamType.option,
             RelatedType: Type,
-            defaultValue: defaultValue
+            defaultValue: defaultValue,
+            __name__: getTypeName(Type)
         };
     }
 
@@ -159,7 +160,8 @@ function () {
 
         return {
             type: ParamType.params,
-            RelatedType: Type
+            RelatedType: Type,
+            __name__: getTypeName(Type)
         };
     }
 
@@ -179,18 +181,46 @@ function () {
             nullable: true,
             __isInstance__: function (object) {
                 return object == null || is_(object, Type); // returns true when object is undefined.
-            }
+            },
+            __name__: getTypeName(Type) + "?"
         };
     }
 
-    function delegate_(params_Type) {
-        var Types = slice.call(arguments)
-        for (var i = 0; i < Types.length; i++) {
-            if (!isTypeMark(Types[i]) && !isType(Types[i])) {
-                error("invalid type.");
+    function delegate_(params_Type, body) {
+        if (arguments.length == 0) {
+            error("at least one argument is required.");
+            return;
+        }
+
+        var typeNames = [];
+
+        var Types = [];
+        var typesLength = arguments.length - 1;
+
+        for (var i = 0; i < typesLength; i++) {
+            var Type = arguments[i];
+
+            if (!isTypeMark(Type) && !isType(Type)) {
+                error("invalid parameter type.");
                 return;
             }
+
+            Types.push(Type);
+            typeNames.push(getTypeName(Type));
         }
+
+        body = arguments[typesLength];
+        if (body == null)
+            body = function () { };
+
+        if (typeof body != "function") {
+            error('"body" should be null or a function.');
+            return;
+        }
+
+        var names = body.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
+        for (var i = 0; i < typeNames.length; i++)
+            typeNames[i] += (names[i] ? " " + names[i] : "");
 
         var delegate = {
             type: ParamType.delegate,
@@ -198,6 +228,7 @@ function () {
             __isInstance__: function (object) {
                 return typeof object == "function";
             },
+            __name__: "delegate(" + typeNames.join(", ") + ")",
             with_: function (Type) {
                 if (!isType(Type)) {
                     error('argument "Type" given is invalid.');
@@ -220,6 +251,7 @@ function () {
                     return;
                 }
                 delegate.RelatedReturnType = Type;
+                delegate.__name__ = getTypeName(Type) + " " + delegate.__name__;
                 delete delegate.as_;
                 return delegate;
             }
@@ -308,6 +340,20 @@ function () {
         return method;
     }
 
+    function getTypeName(Type, def) {
+        var name;
+
+        if (Type.__name__)
+            name = Type.__name__;
+        else if (typeof Type == "function")
+            name = /^function\s([^\(]*)/.exec(Type.toString())[1];
+
+        if (typeof name != "string")
+            name = arguments.length == 1 ? "UnnamedType" : def;
+
+        return name;
+    }
+
     global._ = _;
     global.opt_ = opt_;
     global.params_ = params_;
@@ -337,7 +383,7 @@ function () {
             var paramType =
                 typeof Type == "function" ?
                     ParamType.normal :
-                    Type ? Type.type || ParamType.normal: undefined;
+                    Type ? Type.type || ParamType.normal : undefined;
                 
             switch (paramType) {
                 case ParamType.normal:
@@ -553,7 +599,8 @@ function () {
                 }
 
                 return true;
-            }
+            },
+            __name__: getTypeName(Type) + "[]"
         };
     }
 
@@ -566,17 +613,30 @@ function () {
         return isType(object);
     };
 
-    function Integer() { return new Number(0); }
+    function Integer(n) { return new Number(arguments.length > 0 ? Math.floor(n) : 0); }
     Integer.__isInstance__ = function (object) {
         return typeof object == "number" && object % 1 == 0;
     };
 
-    global.is_ = _(nul_(Object), Type, is_).as_(Boolean);
     global.PlainObject = PlainObject;
     global.IList = IList;
     global.TypedList = _(Type, TypedList);
     global.Type = Type;
     global.Integer = Integer;
+
+    "add __name__",
+    function () {
+        for (var i in global) {
+            if (typeof global[i] == "function" && /[A-Z]/.test(i.charAt(0)) && !global[i].__name__)
+                global[i].__name__ = i;
+        }
+
+        var list = "Number|String|Boolean|RegExp|Array|Function|Object".split("|");
+        for (var i = 0; i < list.length; i++)
+            global[list[i]].__name__ = list[i];
+    }();
+
+    global.is_ = _(nul_(Object), Type, is_).as_(Boolean);
 
     /* OTHER EXTENDED METHODS */
 
@@ -601,8 +661,8 @@ function () {
         return true;
     }
 
-    global.for_ = _(IList, delegate_(Object, Integer, Integer), for_).as_(Boolean);
-    global.forin_ = _(Object, delegate_(Object, String), forin_).as_(Boolean);
+    global.for_ = _(IList, delegate_(Object, Integer, Integer, function (object, i, length) { }), for_).as_(Boolean);
+    global.forin_ = _(Object, delegate_(Object, String, function (object, i) { }), forin_).as_(Boolean);
 
     function enum_(items) {
         var count = items.length;
@@ -640,7 +700,7 @@ function () {
 
     /* VEJIS CLASS ENHANCING */
 
-    var class_ = _(opt_(nul_(String)), Function, function (name, ClassBody) {
+    function class_(name, ClassBody) {
         var pri = {};
 
         var info = {
@@ -675,11 +735,11 @@ function () {
 
             var constructor;
 
-            this._ = function () {
+            this._ = function (params_Type, fn) {
                 if (!constructor)
-                    constructor = _.apply(this, arguments);
+                    constructor = _.apply(this, arguments).bind_(this);
                 else
-                    constructor._.apply(this, arguments);
+                    constructor._.apply(this, arguments).bind_(this);
             };
 
             var ins = ClassBody.call(this, Class, pri);
@@ -754,9 +814,9 @@ function () {
         });
 
         return Class;
-    });
+    }
 
-    global.class_ = class_;
+    global.class_ = _(opt_(String), Function, class_);
 
     function buildStatic(pub, pri, staticBody, overwrite) {
         var o = {
@@ -773,7 +833,7 @@ function () {
         staticBody.call(o, pub, pri);
     }
 
-    global.interface_ = _(opt_(nul_(String)), PlainObject, function (name, body) {
+    function interface_(name, body) {
         var list = [];
 
         for (var i in body) {
@@ -803,7 +863,9 @@ function () {
         Interface.__name__ = name;
 
         return Interface;
-    });
+    }
+
+    global.interface_ = _(opt_(String), PlainObject, interface_);
 
     /* VEJIS MODULE SYSTEM */
 
@@ -879,6 +941,14 @@ function () {
             }
         };
 
+        var createClass = _(String, Function, function (name, ClassBody) {
+            return this[name] = class_(name, ClassBody);
+        });
+
+        var createInterface = _(String, PlainObject, function (name, body) {
+            return this[name] = interface_(name, body);
+        });
+
         function getInfo(name) {
             var baseName = name.match(/[^\/]+/)[0];
 
@@ -886,7 +956,10 @@ function () {
 
             if (!info) {
                 info = {
-                    module: baseName == name? {} : infos(baseName).module,
+                    module: baseName == name ? {
+                        class_: createClass,
+                        interface_: createInterface
+                    } : infos(baseName).module,
                     ready: false,
                     callbacks: []
                 };
