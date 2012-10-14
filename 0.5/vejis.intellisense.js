@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS Intellisense file v0.5.0.121013
+    VEJIS Intellisense file v0.5.0.121014
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -151,10 +151,10 @@ function () {
                     break;
             }
         }
-        else if (arguments.length > 1 && !is_(defaultValue, Type)) {
-            error('arguments "defaultValue" and "Type" given doesn\'t match.');
-            return;
-        }
+        //else if (arguments.length > 1 && !is_(defaultValue, Type)) {
+        //    error('arguments "defaultValue" and "Type" given doesn\'t match.');
+        //    return;
+        //}
 
         return {
             type: ParamType.option,
@@ -240,7 +240,7 @@ function () {
 
         var names = body.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
         for (var i = 0; i < typeNames.length; i++)
-            typeNames[i] += (names[i] ? " " + names[i] : "");
+            typeNames[i] += " " + (names[i] || "p" + (i + 1));
 
         var args = Types.concat(body);
         var demoIns = _.apply(null, args);
@@ -326,7 +326,7 @@ function () {
             for (var i = 0; i < Types.length; i++) {
                 var Type = Types[i];
                 var param = {
-                    name: names[i],
+                    name: names[i] || "p" + (i + 1),
                     type: undefined,
                     optional: false 
                 };
@@ -391,6 +391,10 @@ function () {
             };
 
             return method;
+        };
+
+        method.toString = function () {
+            return collection.toString();
         };
 
         if (arguments.length)
@@ -640,6 +644,10 @@ function () {
 
             return result;
         };
+
+        this.toString = function () {
+            return fn.toString();
+        };
     }
 
     function OverloadCollection() {
@@ -657,6 +665,10 @@ function () {
                     return result.value;
             }
             error("no overload matches arguments given.");
+        };
+
+        this.toString = function () {
+            return list.join("\n-\n");
         };
     }
 

@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.121013
+    VEJIS JavaScript Framework v0.5.0.121014
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -220,7 +220,7 @@ function () {
 
         var names = body.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
         for (var i = 0; i < typeNames.length; i++)
-            typeNames[i] += (names[i] ? " " + names[i] : "");
+            typeNames[i] += " " + (names[i] || "p" + (i + 1));
 
         var delegate = {
             type: ParamType.delegate,
@@ -327,11 +327,19 @@ function () {
                     return;
                 }
                 overload.staticObject = staticObject;
+
+                for (var i = 0; i < params.length; i++)
+                    params[i].name = names[i + 1];
+
                 delete method.static_;
                 return method;
             };
 
             return method;
+        };
+
+        method.toString = function () {
+            return collection.toString();
         };
 
         if (arguments.length)
@@ -555,6 +563,10 @@ function () {
 
             return result;
         };
+
+        this.toString = function () {
+            return fn.toString();
+        };
     }
 
     function OverloadCollection() {
@@ -572,6 +584,10 @@ function () {
                     return result.value;
             }
             error("no overload matches arguments given.");
+        };
+
+        this.toString = function () {
+            return list.join("\n-\n");
         };
     }
 
