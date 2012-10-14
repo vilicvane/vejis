@@ -924,12 +924,14 @@ function () {
         this.addModule = function (name, subs, builder) {
             var info = getInfo(name);
 
+            var module = info.module;
+
             if (info.ready) {
                 warn('module "' + name + '" already loaded.');
                 return;
             }
 
-            builder.call(info.module);
+            builder.call(module);
 
             if (subs.length > 0) {
                 var start = name + "/";
@@ -947,6 +949,11 @@ function () {
 
             function handler() {
                 info.ready = true;
+
+                if (info.isRoot) {
+                    delete module.class_;
+                    delete module.interface_;
+                }
 
                 var callbacks = info.callbacks;
                 if (callbacks.length > 0) {
@@ -970,12 +977,15 @@ function () {
 
             var info = infos(name);
 
+            var isRoot = baseName == name;
+
             if (!info) {
                 info = {
-                    module: baseName == name ? {
+                    module: isRoot ? {
                         class_: createClass,
                         interface_: createInterface
                     } : infos(baseName).module,
+                    isRoot: isRoot,
                     ready: false,
                     callbacks: []
                 };

@@ -254,6 +254,8 @@ function () {
             },
             __name__: "delegate(" + typeNames.join(", ") + ")",
             with_: function (Type) {
+                /// <summary>Set the type of this for this delegate.</summary>
+                /// <param name="Type" type="Type">type of this.</param>
                 if (!isType(Type)) {
                     error('argument "Type" given is invalid.');
                     return;
@@ -264,12 +266,16 @@ function () {
                 return delegate;
             },
             bind_: function (object) {
+                /// <summary>Bind the value of this for this delegate.</summary>
+                /// <param name="object" type="Object">value of this.</param>
                 delegate.relatedThisObject = { value: object };
                 delete delegate.with_;
                 delete delegate.bind_;
                 return delegate;
             },
             as_: function (Type) {
+                /// <summary>Set the type of return value for this delegate.</summary>
+                /// <param name="Type" type="Type">type of this.</param>
                 if (!isType(Type)) {
                     error('argument "Type" given is invalid.');
                     return;
@@ -285,7 +291,11 @@ function () {
         return delegate;
     }
 
-    function _(params_Type, fn) {
+    function _(Types, fn) {
+        /// <summary>Create a VEJIS method.</summary>
+        /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
+        /// <param name="fn" type="Function">the related function.</param>
+
         var collection = new OverloadCollection();
 
         var method = function () {
@@ -295,11 +305,16 @@ function () {
         var overloads =
         method.__overloads__ = [];
 
-        method._ = function (params_Type, fn) {
+        method._ = function (Types, fn) {
+            /// <summary>Create an overload.</summary>
+            /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
+            /// <param name="fn" type="Function">the related function.</param>
+
             if (arguments.length == 0)
                 return error("at least one argument is required.");
 
-            var Types = [];
+            var ParamTypes = [];
+
             var typesLength = arguments.length - 1;
             for (var i = 0; i < typesLength; i++) {
                 var Type = arguments[i];
@@ -307,7 +322,7 @@ function () {
                     error("invalid parameter type.");
                     return;
                 }
-                Types.push(Type);
+                ParamTypes.push(Type);
             }
 
             fn = arguments[typesLength];
@@ -323,8 +338,8 @@ function () {
 
             var names = fn.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
 
-            for (var i = 0; i < Types.length; i++) {
-                var Type = Types[i];
+            for (var i = 0; i < ParamTypes.length; i++) {
+                var Type = ParamTypes[i];
                 var param = {
                     name: names[i] || "p" + (i + 1),
                     type: undefined,
@@ -343,11 +358,13 @@ function () {
             }
             overloads.push(fn);
         
-            var overload = new Overload(Types, fn);
+            var overload = new Overload(ParamTypes, fn);
 
             collection.add(overload);
 
             method.as_ = function (Type) {
+                /// <summary>Set the type of return value for this overload.</summary>
+                /// <param name="Type" type="Type">type of this.</param>
                 if (!isType(Type)) {
                     error('argument "Type" given is invalid.');
                     return;
@@ -359,6 +376,8 @@ function () {
             };
 
             method.with_ = function (Type) {
+                /// <summary>Set the type of this for this overload.</summary>
+                /// <param name="Type" type="Type">type of this.</param>
                 if (!isType(Type)) {
                     error('argument "Type" given is invalid.');
                     return;
@@ -370,6 +389,8 @@ function () {
             };
 
             method.bind_ = function (object) {
+                /// <summary>Bind the value of this for this overload.</summary>
+                /// <param name="object" type="Object">value of this.</param>
                 overload.thisObject = { value: object };
                 delete method.with_;
                 delete method.bind_;
@@ -377,6 +398,8 @@ function () {
             };
 
             method.static_ = function (staticObject) {
+                /// <summary>Define the static object for this method.</summary>
+                /// <param name="staticObject" type="PlainObject">the static object.</param>
                 if (!is_(staticObject, PlainObject)) {
                     error('"staticObject" must be a plain object.');
                     return;
@@ -1078,12 +1101,14 @@ function () {
         this.addModule = function (name, subs, builder) {
             var info = getInfo(name);
 
+            var module = info.module;
+
             if (info.ready) {
                 warn('module "' + name + '" already loaded.');
                 return;
             }
 
-            builder.call(info.module);
+            builder.call(module);
 
             if (subs.length > 0) {
                 var start = name + "/";
@@ -1101,6 +1126,11 @@ function () {
 
             function handler() {
                 info.ready = true;
+
+                if (info.isRoot) {
+                    delete module.class_;
+                    delete module.interface_;
+                }
 
                 var callbacks = info.callbacks;
                 if (callbacks.length > 0) {
@@ -1124,12 +1154,15 @@ function () {
 
             var info = infos(name);
 
+            var isRoot = baseName == name;
+
             if (!info) {
                 info = {
-                    module: baseName == name ? {
+                    module: isRoot ? {
                         class_: createClass,
                         interface_: createInterface
                     } : infos(baseName).module,
+                    isRoot: isRoot,
                     ready: false,
                     callbacks: []
                 };
