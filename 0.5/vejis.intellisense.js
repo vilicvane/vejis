@@ -20,6 +20,20 @@ function () {
     var zeroTimer = new function () {
         var on = false;
         var handlers = [];
+        var setTimeout = global.setTimeout;
+
+        global.setInterval =
+        global.setTimeout = function (handler, timeout, args) {
+            /// <param name="handler" type="Object"></param>
+            /// <param name="timeout" type="Object" optional="true"></param>
+            /// <param name="args" type="Object"></param>
+            /// <returns type="Number" />
+            zeroTimer.add(function () {
+                handler.apply(null, args);
+            });
+            return 0;
+        };
+
         this.add = function (handler) {
             handlers.push(handler);
             if (!on) {
@@ -106,7 +120,7 @@ function () {
     function isTypeMark(TypeMark) {
         return (
             typeof TypeMark == "object" &&
-            !!TypeMark && typeof TypeMark.type == "number"
+            !!TypeMark && typeof TypeMark.__type__ == "number"
         );
     }
 
@@ -133,6 +147,7 @@ function () {
         if (arguments.length == 1) {
             switch (Type) {
                 case Number:
+                case Integer:
                     defaultValue = 0;
                     break;
                 case String:
@@ -141,8 +156,12 @@ function () {
                 case Boolean:
                     defaultValue = false;
                     break;
+                case Object:
+                case PlainObject:
+                    defaultValue = {};
+                    break;
                 default:
-                    if (Type.nullable)
+                    if (Type.__nullable__)
                         defaultValue = null;
                     else {
                         error('argument "defaultValue" is required when the "Type" given is not String, Number, Boolean or a nullable type.');
@@ -157,7 +176,7 @@ function () {
         //}
 
         return {
-            type: ParamType.option,
+            __type__: ParamType.option,
             RelatedType: Type,
             defaultValue: defaultValue,
             __demoInstance__: getInstance(Type),
@@ -177,7 +196,7 @@ function () {
         }
 
         return {
-            type: ParamType.params,
+            __type__: ParamType.params,
             RelatedType: Type,
             __demoInstance__: [getInstance(Type)],
             __name__: getTypeName(Type)
@@ -196,8 +215,8 @@ function () {
         }
 
         return {
-            type: ParamType.normal,
-            nullable: true,
+            __type__: ParamType.normal,
+            __nullable__: true,
             __isInstance__: function (object) {
                 return object == null || is_(object, Type); // returns true when object is undefined.
             },
@@ -206,7 +225,11 @@ function () {
         };
     }
 
-    function delegate_(params_Type, body) {
+    function delegate_(Types, body) {
+        /// <summary>Create a delegate.</summary>
+        /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
+        /// <param name="body" type="Function?">a template function.</param>
+
         if (arguments.length == 0) {
             error("at least one argument is required.");
             return;
@@ -214,7 +237,7 @@ function () {
 
         var typeNames = [];
 
-        var Types = [];
+        var ParamTypes = [];
         var typesLength = arguments.length - 1;
 
         for (var i = 0; i < typesLength; i++) {
@@ -225,7 +248,7 @@ function () {
                 return;
             }
 
-            Types.push(Type);
+            ParamTypes.push(Type);
             typeNames.push(getTypeName(Type));
         }
 
@@ -242,12 +265,11 @@ function () {
         for (var i = 0; i < typeNames.length; i++)
             typeNames[i] += " " + (names[i] || "p" + (i + 1));
 
-        var args = Types.concat(body);
+        var args = ParamTypes.concat(body);
         var demoIns = _.apply(null, args);
 
         var delegate = {
-            type: ParamType.delegate,
-            RelatedTypes: Types,
+            __type__: ParamType.delegate,
             __demoInstance__: demoIns,
             __isInstance__: function (object) {
                 return typeof object == "function";
@@ -260,7 +282,7 @@ function () {
                     error('argument "Type" given is invalid.');
                     return;
                 }
-                delegate.RelatedThisType = Type;
+                delegate.__RelatedThisType__ = Type;
                 delete delegate.with_;
                 delete delegate.bind_;
                 return delegate;
@@ -268,7 +290,7 @@ function () {
             bind_: function (object) {
                 /// <summary>Bind the value of this for this delegate.</summary>
                 /// <param name="object" type="Object">value of this.</param>
-                delegate.relatedThisObject = { value: object };
+                delegate.__relatedThisObject__ = { value: object };
                 delete delegate.with_;
                 delete delegate.bind_;
                 return delegate;
@@ -280,7 +302,7 @@ function () {
                     error('argument "Type" given is invalid.');
                     return;
                 }
-                delegate.RelatedReturnType = Type;
+                delegate.__RelatedReturnType__ = Type;
                 demoIns.as_(Type);
                 delegate.__name__ = getTypeName(Type) + " " + delegate.__name__;
                 delete delegate.as_;
@@ -346,12 +368,12 @@ function () {
                     optional: false 
                 };
 
-                if (Type.type == ParamType.option || Type.type == ParamType.params)
+                if (Type.__type__ == ParamType.option || Type.__type__ == ParamType.params)
                     param.optional = true;
 
                 param.type = getTypeName(Type);
 
-                if (Type.type == ParamType.params)
+                if (Type.__type__ == ParamType.params)
                     param.type += "...";
 
                 params.push(param);
@@ -471,7 +493,7 @@ function () {
             var paramType =
                 typeof Type == "function" ?
                     ParamType.normal :
-                    Type ? Type.type || ParamType.normal : undefined;
+                    Type ? Type.__type__ || ParamType.normal : undefined;
                 
             switch (paramType) {
                 case ParamType.normal:
@@ -562,14 +584,14 @@ function () {
                 if (!is_(arg, Type))
                     return result;
 
-                if (Type.type == ParamType.delegate) {
-                    arg = _.apply(this, Type.RelatedTypes.concat(arg));
-                    if (Type.relatedThisObject)
-                        arg.bind_(Type.relatedThisObject.value);
-                    else if (Type.RelatedThisType)
-                        arg.with_(Type.RelatedThisType);
-                    if (Type.RelatedReturnType)
-                        arg.as_(Type.RelatedReturnType);
+                if (Type.__type__ == ParamType.delegate) {
+                    arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                    if (Type.__relatedThisObject__)
+                        arg.bind_(Type.__relatedThisObject__.value);
+                    else if (Type.__RelatedThisType__)
+                        arg.with_(Type.__RelatedThisType__);
+                    if (Type.__RelatedReturnType__)
+                        arg.as_(Type.__RelatedReturnType__);
                 }
 
                 destArgs.push(arg);
@@ -588,14 +610,14 @@ function () {
                 if (!is_(arg, Type))
                     return result;
 
-                if (Type.type == ParamType.delegate) {
-                    arg = _.apply(this, Type.RelatedTypes.concat(arg));
-                    if (Type.relatedThisObject)
-                        arg.bind_(Type.relatedThisObject.value);
-                    else if (Type.RelatedThisType)
-                        arg.with_(Type.RelatedThisType);
-                    if (Type.RelatedReturnType)
-                        arg.as_(Type.RelatedReturnType);
+                if (Type.__type__ == ParamType.delegate) {
+                    arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                    if (Type.__relatedThisObject__)
+                        arg.bind_(Type.__relatedThisObject__.value);
+                    else if (Type.__RelatedThisType__)
+                        arg.with_(Type.__RelatedThisType__);
+                    if (Type.__RelatedReturnType__)
+                        arg.as_(Type.__RelatedReturnType__);
                 }
 
                 destArgs.push(arg);
@@ -606,7 +628,7 @@ function () {
             var paLength = diff - opLength;
             var paStart = optionalIndex + opLength;
 
-            if (paLength == 1 && is_(args[paStart], TypedList(ParamsRelatedType)))
+            if (paLength == 1 && is_(args[paStart], List(ParamsRelatedType)))
                 destArgs.push(slice.call(args[paStart]));
             else if (ParamsRelatedType) {
                 var paArray = [];
@@ -617,14 +639,14 @@ function () {
                     if (!is_(arg, Type))
                         return result;
 
-                    if (Type.type == ParamType.delegate) {
-                        arg = _.apply(this, Type.RelatedTypes.concat(arg));
-                        if (Type.relatedThisObject)
-                            arg.bind_(Type.relatedThisObject.value);
-                        else if (Type.RelatedThisType)
-                            arg.with_(Type.RelatedThisType);
-                        if (Type.RelatedReturnType)
-                            arg.as_(Type.RelatedReturnType);
+                    if (Type.__type__ == ParamType.delegate) {
+                        arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                        if (Type.__relatedThisObject__)
+                            arg.bind_(Type.__relatedThisObject__.value);
+                        else if (Type.__RelatedThisType__)
+                            arg.with_(Type.__RelatedThisType__);
+                        if (Type.__RelatedReturnType__)
+                            arg.as_(Type.__RelatedReturnType__);
                     }
 
                     paArray.push(arg);
@@ -640,14 +662,14 @@ function () {
                 if (!is_(arg, Type))
                     return result;
 
-                if (Type.type == ParamType.delegate) {
-                    arg = _.apply(this, Type.RelatedTypes.concat(arg));
-                    if (Type.relatedThisObject)
-                        arg.bind_(Type.relatedThisObject.value);
-                    else if (Type.RelatedThisType)
-                        arg.with_(Type.RelatedThisType);
-                    if (Type.RelatedReturnType)
-                        arg.as_(Type.RelatedReturnType);
+                if (Type.__type__ == ParamType.delegate) {
+                    arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                    if (Type.__relatedThisObject__)
+                        arg.bind_(Type.__relatedThisObject__.value);
+                    else if (Type.__RelatedThisType__)
+                        arg.with_(Type.__RelatedThisType__);
+                    if (Type.__RelatedReturnType__)
+                        arg.as_(Type.__RelatedReturnType__);
                 }
 
                 destArgs.push(arg);
@@ -738,18 +760,17 @@ function () {
 
     function PlainObject() { return {}; }
     PlainObject.__isInstance__ = function (object) {
-        return object && typeof object == "object" && object.constructor == Object;
+        return !!object && typeof object == "object" && object.constructor == Object;
     };
 
-    function IList() { return []; }
-    IList.__isInstance__ = function (object) {
-        return object && typeof object == "object" && typeof object.length == "number";
-    };
+    var IList = interface_("IList", {
+        length: Integer
+    });
 
-    function TypedList(Type) {
+    function List(Type) {
         return {
             __isInstance__: function (object) {
-                if (!is_(object, IList)) return false;
+                if (!is_(object, Array)) return false;
 
                 for (var i = 0; i < object.length; i++) {
                     var item = object[i];
@@ -779,7 +800,7 @@ function () {
     };
     global.PlainObject = PlainObject;
     global.IList = IList;
-    global.TypedList = _(Type, TypedList);
+    global.List = _(Type, List);
     global.Type = Type;
     global.Integer = Integer;
 
@@ -800,6 +821,9 @@ function () {
     /* OTHER EXTENDED METHODS */
 
     function for_(array, loop) {
+        //Traverse an array, returns true if the traversal is completed.
+        //array: the array to be traversed.
+        //loop: the loop handler, return false to break traversal; and return a number to specify the increasement of i.
         for (var i = 0; i < array.length;) {
             var result = loop(array[i], i, array.length);
             if (result === false)
@@ -813,6 +837,9 @@ function () {
     }
 
     function forin_(object, loop) {
+        //Traverse the properties of an object, returns true if the traversal is completed.
+        //object: the target object.
+        //loop: the loop handler, return false to break traversal.
         for (var i in object)
             if (hasOwnProperty.call(object, i))
                 if (loop(object[i], i) === false)
@@ -820,10 +847,10 @@ function () {
         return true;
     }
 
-    global.for_ = _(IList, delegate_(Object, Integer, Integer, function (object, i, length) { }), for_).as_(Boolean);
-    global.forin_ = _(Object, delegate_(Object, String, function (object, i) { }), forin_).as_(Boolean);
+    global.for_ = _(IList, delegate_(Object, Integer, Integer, function (value, i, length) { }), for_).as_(Boolean);
+    global.forin_ = _(Object, delegate_(Object, String, function (value, name) { }), forin_).as_(Boolean);
 
-    function enum_(items) {
+    function enum_(name, items) {
         var count = items.length;
 
         if (count > 32) {
@@ -844,6 +871,7 @@ function () {
             );
         };
 
+        Enum.__name__ = name;
         Enum.__demoInstance__ = new Enum("", 0);
 
         for (var i = 0; i < count; i++)
@@ -852,11 +880,9 @@ function () {
         return Enum;
     }
 
-    global.enum_ = _(params_(String), enum_);
-    global.enum_._(String, TypedList(String), function (name, items) {
-        var Enum = enum_(items);
-        Enum.__name__ = name;
-        return Enum;
+    global.enum_ = _(String, List(String), enum_);
+    global.enum_._(params_(String), function (items) {
+        return enum_(null, items);
     });
 
     /* VEJIS CLASS ENHANCING */
@@ -877,6 +903,9 @@ function () {
         var Class = function () {
             var that = this;
 
+            if (theInterface)
+                copy(theInterface.__demoInstance__, this, true);
+
             var ClassBodies = [];
             var inheritInfo = info;
 
@@ -889,16 +918,18 @@ function () {
                 var ins = ClassBodies[i].call(this, Class, pri);
                 if (ins) {
                     var type = typeof ins;
-                    if (type == "function" || type == "object") {
-                        error("a base class in the inheritance chain is actually a factory and is not inheritable.");
-                        return;
-                    }
+                    if (type == "function" || type == "object")
+                        copy(ins, this, true);
                 }
             }
 
             var constructor;
 
-            this._ = function (params_Type, fn) {
+            this._ = function (Types, fn) {
+                /// <summary>Define a constructor.</summary>
+                /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
+                /// <param name="fn" type="Function">the related function.</param>
+
                 if (!constructor)
                     constructor = _.apply(this, arguments).bind_(this);
                 else
@@ -918,6 +949,7 @@ function () {
             if (ins) {
                 var type = typeof ins;
                 if (type == "function" || type == "object") {
+                    copy(this, ins, false);
                     if (!relatedInstance) {
                         var RelatedClass = function () { };
                         RelatedClass.prototype = Class.prototype;
@@ -926,6 +958,11 @@ function () {
                     ins.__relatedInstance__ = relatedInstance;
                 }
             }
+
+            //if (theInterface && !is_(ins || this, theInterface)) {
+            //    error("some of the items defined in the interface are not implemented.");
+            //    return;
+            //}
 
             return ins;
         };
@@ -985,6 +1022,13 @@ function () {
             return Class;
         });
 
+        Class.inherit_._(Interface, function (Interface) {
+            delete Class.inherit_;
+            theInterface = Interface;
+
+            return Class;
+        });
+
         zeroTimer.add(function () {
             new Class();
         });
@@ -1012,6 +1056,7 @@ function () {
     function interface_(name, body) {
         var ins = {};
         var list = [];
+        var hash = {};
 
         for (var i in body) {
             if (hasOwnProperty.call(body, i)) {
@@ -1021,29 +1066,52 @@ function () {
                     name: i,
                     Type: Type
                 });
+                hash[i] = true;
             }
         }
 
-        var Interface = {
-            __demoInstance__: ins,
-            __isInstance__: function (object) {
-                if (!object) return false;
+        var theInterface = new Interface();
 
-                for (var i = 0; i < list.length; i++) {
-                    var item = list[i];
-                    if (!is_(object[item.name], item.Type))
-                        return false;
-                }
+        theInterface.__demoInstance__ = ins;
+        theInterface.__isInstance__ = function (object) {
+            if (!object) return false;
 
-                return true;
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i];
+                if (!is_(object[item.name], item.Type))
+                    return false;
             }
+
+            return true;
+        };
+        theInterface.__name__ = name;
+        theInterface.__list__ = list;
+        theInterface.inherit_ = function (target) {
+            /// <param name="target" type="Interface">the interface to inherit.</param>
+            if (!is_(target, Interface)) {
+                error("parameter target should be Interface.");
+                return;
+            }
+
+            var pList = target.__list__ || [];
+            for (var i = 0; i < pList.length; i++) {
+                var item = pList[i];
+                if (!hasOwnProperty.call(hash, item.name)) {
+                    list.push(item);
+                    ins[item.name] = getInstance(item.Type);
+                    hash[item.name] = true;
+                }
+            }
+
+            return theInterface;
         };
 
-        Interface.__name__ = name;
-
-        return Interface;
+        return theInterface;
     }
 
+    function Interface() { }
+
+    global.Interface = Interface;
     global.interface_ = _(opt_(String), PlainObject, interface_);
 
     function getInstance(Type) {
@@ -1098,7 +1166,7 @@ function () {
             }
         }
 
-        this.addModule = function (name, subs, builder) {
+        this.addModule = function (name, parts, builder) {
             var info = getInfo(name);
 
             var module = info.module;
@@ -1110,16 +1178,16 @@ function () {
 
             builder.call(module);
 
-            if (subs.length > 0) {
+            if (parts.length > 0) {
                 var start = name + "/";
 
-                for (var i = 0; i < subs.length; i++) {
-                    var sub = subs[i];
+                for (var i = 0; i < parts.length; i++) {
+                    var sub = parts[i];
                     if (sub.indexOf(start) != 0)
-                        subs[i] = start + sub;
+                        parts[i] = start + sub;
                 }
 
-                addUse(subs, handler);
+                addUse(parts, handler);
             }
             else
                 handler();
@@ -1130,6 +1198,7 @@ function () {
                 if (info.isRoot) {
                     delete module.class_;
                     delete module.interface_;
+                    delete module.enum_;
                 }
 
                 var callbacks = info.callbacks;
@@ -1149,6 +1218,10 @@ function () {
             return this[name] = interface_(name, body);
         });
 
+        var createEnum = _(String, List(String), function (name, items) {
+            return this[name] = enum_(name, items);
+        });
+
         function getInfo(name) {
             var baseName = name.match(/[^\/]+/)[0];
 
@@ -1160,7 +1233,8 @@ function () {
                 info = {
                     module: isRoot ? {
                         class_: createClass,
-                        interface_: createInterface
+                        interface_: createInterface,
+                        enum_: createEnum
                     } : infos(baseName).module,
                     isRoot: isRoot,
                     ready: false,
@@ -1173,8 +1247,8 @@ function () {
         }
     }();
 
-    global.module_ = _(String, opt_(TypedList(String), []), Function, function (name, subs, builder) {
-        moduleInvoker.addModule(name, subs, builder);
+    global.module_ = _(String, opt_(List(String), []), Function, function (name, parts, builder) {
+        moduleInvoker.addModule(name, parts, builder);
     });
 
     global.use_ = _(params_(String), Function, function (names, handler) {
@@ -1183,18 +1257,31 @@ function () {
 
     var requiredFiles = {};
 
-    global.require_ = _(params_(String), function (files) {
+    global.require_ = _(params_(String), require_);
+    global.require_._(String, List(String), function (baseDir, srcs) {
+        //Require script files by adding script tags.
+        //baseDir: specify a base directory that will be added to the srcs strings.
+        //srcs: the srcs.
+        for (var i = 0; i < srcs.length; i++)
+            srcs[i] = baseDir + srcs[i];
+        return require_(srcs);
+    });
+
+    function require_(srcs) {
+        //Require script files by adding script tags.
+        //srcs: the srcs.
         var head = document.getElementsByTagName("head")[0];
-        for_(files, function (file) {
-            if (hasOwnProperty.call(requiredFiles, file))
+        for (var i = 0; i < srcs.length; i++) {
+            var src = srcs[i];
+            if (hasOwnProperty.call(requiredFiles, src))
                 return;
 
-            requiredFiles[file] = true;
+            requiredFiles[src] = true;
             var script = document.createElement("script");
             script.async = "async";
-            script.src = file;
+            script.src = src;
             head.insertBefore(script, head.firstChild);
-        });
-    });
+        }
+    }
 
 }();
