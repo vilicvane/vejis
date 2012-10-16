@@ -1222,10 +1222,12 @@ function () {
 
             var module = info.module;
 
-            if (info.ready) {
-                warn('module "' + name + '" already loaded.');
+            if (info.created) {
+                warn('module "' + name + '" already exists.');
                 return;
             }
+
+            info.created = true;
 
             if (builder)
                 builder.call(module);
@@ -1264,7 +1266,7 @@ function () {
 
         this.getModule = function (name) {
             var info = infos(name);
-            if (info)
+            if (info && info.ready)
                 return info.module;
             else
                 return undefined;
@@ -1298,6 +1300,7 @@ function () {
                     } : infos(baseName).module,
                     isRoot: isRoot,
                     ready: false,
+                    created: false,
                     callbacks: []
                 };
                 infos(name, info);
