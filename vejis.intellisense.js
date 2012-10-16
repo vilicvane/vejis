@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS Intellisense file v0.5.0.3
+    VEJIS Intellisense file v0.5.0.4
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -1266,7 +1266,7 @@ function () {
 
         this.getModule = function (name) {
             var info = infos(name);
-            if (info && info.ready)
+            if (info && info.isRoot && info.ready)
                 return info.module;
             else
                 return undefined;
@@ -1285,7 +1285,7 @@ function () {
         });
 
         function getInfo(name) {
-            var baseName = name.match(/[^\/]+/)[0];
+            var baseName = name.match(/^[^\/]+/)[0];
 
             var info = infos(name);
 
@@ -1297,7 +1297,7 @@ function () {
                         class_: createClass,
                         interface_: createInterface,
                         enum_: createEnum
-                    } : infos(baseName).module,
+                    } : getInfo(baseName).module,
                     isRoot: isRoot,
                     ready: false,
                     created: false,
