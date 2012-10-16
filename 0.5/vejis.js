@@ -559,7 +559,7 @@ function () {
             var value = fn.apply(thisArg, destArgs);
 
             if (this.ReturnType && !is_(value, this.ReturnType)) {
-                error("the function returned a value doesn't match the type specified.");
+                error("the function returned a value (" + value + ") doesn't match the type (" + getTypeName(Type) + ") specified.");
                 return;
             }
 
