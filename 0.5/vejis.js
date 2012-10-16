@@ -2,8 +2,6 @@
     VEJIS JavaScript Framework v0.5.0.121016
     http://vejis.org
 
-    $Id$
-
     This version is still preliminary and subject to change.
     
     Copyright 2012, VILIC VANE
