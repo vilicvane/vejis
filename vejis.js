@@ -129,8 +129,13 @@ function () {
                 case PlainObject:
                     defaultValue = {};
                     break;
+                case Array:
+                    defaultValue = [];
+                    break;
                 default:
-                    if (Type.__nullable__)
+                    if (Type.__relatedType__ == List)
+                        defaultValue = [];
+                    else if (Type.__nullable__)
                         defaultValue = null;
                     else {
                         error('argument "defaultValue" is required when the "Type" given is not String, Number, Boolean or a nullable type.');
@@ -619,6 +624,7 @@ function () {
 
                 return true;
             },
+            __relatedType__: List,
             __name__: getTypeName(Type) + "[]"
         };
     }
@@ -1001,7 +1007,8 @@ function () {
                 return;
             }
 
-            builder.call(module);
+            if (builder)
+                builder.call(module);
 
             if (parts.length > 0) {
                 var start = name + "/";
@@ -1080,7 +1087,11 @@ function () {
         }
     }();
 
-    global.module_ = _(String, opt_(List(String), []), Function, function (name, parts, builder) {
+    global.module_ = _(String, Function, function (name, builder) {
+        moduleInvoker.addModule(name, [], builder);
+    });
+
+    global.module_._(String, List(String), opt_(nul_(Function)), function (name, parts, builder) {
         moduleInvoker.addModule(name, parts, builder);
     });
 
@@ -1116,6 +1127,7 @@ function () {
 
             requiredFiles[src] = true;
             var script = document.createElement("script");
+            script.type = "text/javascript";
             script.async = "async";
             script.src = src;
             head.insertBefore(script, head.firstChild);

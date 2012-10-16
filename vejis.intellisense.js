@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS Intellisense file v0.5.0.2
+    VEJIS Intellisense file v0.5.0.3
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -160,8 +160,13 @@ function () {
                 case PlainObject:
                     defaultValue = {};
                     break;
+                case Array:
+                    defaultValue = [];
+                    break;
                 default:
-                    if (Type.__nullable__)
+                    if (Type.__relatedType__ == List)
+                        defaultValue = [];
+                    else if (Type.__nullable__)
                         defaultValue = null;
                     else {
                         error('argument "defaultValue" is required when the "Type" given is not String, Number, Boolean or a nullable type.');
@@ -782,6 +787,7 @@ function () {
 
                 return true;
             },
+            __relatedType__: List,
             __demoInstance__: [getInstance(Type)],
             __name__: getTypeName(Type) + "[]"
         };
@@ -1221,7 +1227,8 @@ function () {
                 return;
             }
 
-            builder.call(module);
+            if (builder)
+                builder.call(module);
 
             if (parts.length > 0) {
                 var start = name + "/";
@@ -1300,11 +1307,25 @@ function () {
         }
     }();
 
-    global.module_ = _(String, opt_(List(String), []), Function, function (name, parts, builder) {
+    global.module_ = _(String, Function, function (name, builder) {
+        //Create a module.
+        //name: name of the module.
+        //builder: a function to build the module using "this" pointer.
+        moduleInvoker.addModule(name, [], builder);
+    });
+
+    global.module_._(String, List(String), opt_(nul_(Function)), function (name, parts, builder) {
+        //Create a module with parts separated.
+        //name: name of the module.
+        //parts: names of its parts.
+        //builder: a function to build the module using "this" pointer.
         moduleInvoker.addModule(name, parts, builder);
     });
 
     global.use_ = _(params_(String), Function, function (names, handler) {
+        //Use some modules.
+        //names: names of modules that need to use.
+        //handler: handler to be called when modules specified are ready. the module objects will be passed as arguments in order.
         moduleInvoker.addUse(names, handler);
     });
 
@@ -1344,6 +1365,7 @@ function () {
 
             requiredFiles[src] = true;
             var script = document.createElement("script");
+            script.type = "text/javascript";
             script.async = "async";
             script.src = src;
             head.insertBefore(script, head.firstChild);
