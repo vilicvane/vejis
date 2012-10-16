@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.1
+    VEJIS JavaScript Framework v0.5.0.2
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -659,9 +659,9 @@ function () {
 
     /* OTHER EXTENDED METHODS */
 
-    function for_(array, loop) {
+    global.for_ = _(IList, delegate_(Object, Integer, Integer, null), function for_(array, handler) {
         for (var i = 0; i < array.length;) {
-            var result = loop(array[i], i, array.length);
+            var result = handler(array[i], i, array.length);
             if (result === false)
                 return false;
             else if (typeof result == "number")
@@ -670,18 +670,50 @@ function () {
                 i++;
         }
         return true;
-    }
+    }).as_(Boolean);
 
-    function forin_(object, loop) {
+    global.for_._(params_(IList), Function, function (arrays, handler) {
+        var indexes = [];
+        var items = [];
+
+        var i;
+        for (var i = 0; i < arrays.length; i++) {
+            if (arrays[i].length == 0)
+                return true;
+            indexes[i] = 0;
+            items[i] = arrays[i][0];
+        }
+
+        do {
+            var result = handler.apply(null, items);
+
+            if (result === false)
+                return false;
+
+            for (i = arrays.length - 1; i >= 0; i--) {
+                indexes[i]++;
+                if (indexes[i] < arrays[i].length) {
+                    items[i] = arrays[i][indexes[i]];
+                    break;
+                }
+                else {
+                    indexes[i] = 0;
+                    items[i] = arrays[i][0];
+                }
+            }
+        }
+        while (i >= 0);
+
+        return true;
+    }).as_(Boolean);
+
+    global.forin_ = _(Object, delegate_(Object, String, null), function (object, handler) {
         for (var i in object)
             if (hasOwnProperty.call(object, i))
-                if (loop(object[i], i) === false)
+                if (handler(object[i], i) === false)
                     return false;
         return true;
-    }
-
-    global.for_ = _(IList, delegate_(Object, Integer, Integer, null), for_).as_(Boolean);
-    global.forin_ = _(Object, delegate_(Object, String, null), forin_).as_(Boolean);
+    }).as_(Boolean);
 
     function enum_(name, items) {
         var count = items.length;

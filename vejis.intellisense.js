@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS Intellisense file v0.5.0.1
+    VEJIS Intellisense file v0.5.0.2
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -822,12 +822,12 @@ function () {
 
     /* OTHER EXTENDED METHODS */
 
-    function for_(array, loop) {
+    global.for_ = _(IList, delegate_(Object, Integer, Integer, null), function for_(array, handler) {
         //Traverse an array, returns true if the traversal is completed.
         //array: the array to be traversed.
-        //loop: the loop handler, return false to break traversal; and return a number to specify the increasement of i.
+        //handler: the handler, return false to break traversal; and return a number to specify the increasement of i.
         for (var i = 0; i < array.length;) {
-            var result = loop(array[i], i, array.length);
+            var result = handler(array[i], i, array.length);
             if (result === false)
                 return false;
             else if (typeof result == "number")
@@ -836,24 +836,64 @@ function () {
                 i++;
         }
         return true;
-    }
+    }).as_(Boolean);
 
-    function forin_(object, loop) {
+    global.for_._(params_(IList), Function, function (arrays, handler) {
+        //Traverse an array, returns true if the traversal is completed.
+        //arrays: the arrays to be traversed.
+        //handler: the handler, the full permutation of the arrays given will be passed in as arguments, return false to break traversal.
+
+        var indexes = [];
+        var items = [];
+
+        var i;
+        for (var i = 0; i < arrays.length; i++) {
+            if (arrays[i].length == 0)
+                return true;
+            indexes[i] = 0;
+            items[i] = arrays[i][0];
+        }
+
+        do {
+            var result = handler.apply(null, items);
+
+            if (result === false)
+                return false;
+
+            for (i = arrays.length - 1; i >= 0; i--) {
+                indexes[i]++;
+                if (indexes[i] < arrays[i].length) {
+                    items[i] = arrays[i][indexes[i]];
+                    break;
+                }
+                else {
+                    indexes[i] = 0;
+                    items[i] = arrays[i][0];
+                }
+            }
+        }
+        while (i >= 0);
+
+        return true;
+    }).as_(Boolean);
+
+    global.forin_ = _(Object, delegate_(Object, String, null), function (object, handler) {
         //Traverse the properties of an object, returns true if the traversal is completed.
         //object: the target object.
-        //loop: the loop handler, return false to break traversal.
+        //handler: the handler, return false to break traversal.
         for (var i in object)
             if (hasOwnProperty.call(object, i))
-                if (loop(object[i], i) === false)
+                if (handler(object[i], i) === false)
                     return false;
         return true;
-    }
+    }).as_(Boolean);
 
-    global.for_ = _(IList, delegate_(Object, Integer, Integer, function (value, i, length) { }), for_).as_(Boolean);
-    global.forin_ = _(Object, delegate_(Object, String, function (value, name) { }), forin_).as_(Boolean);
+    function enum_(name, eles) {
+        //Declare an enumeration.
+        //name: the name of the enumeration.
+        //eles: the elements of the enumeration.
 
-    function enum_(name, items) {
-        var count = items.length;
+        var count = eles.length;
 
         if (count > 32) {
             error("the length of enumeration list has exceeded the limit of 32.");
@@ -877,14 +917,17 @@ function () {
         Enum.__demoInstance__ = new Enum("", 0);
 
         for (var i = 0; i < count; i++)
-            var ele = Enum[items[i]] = new Enum(items[i], 1 << i);
+            var ele = Enum[eles[i]] = new Enum(eles[i], 1 << i);
 
         return Enum;
     }
 
     global.enum_ = _(String, List(String), enum_);
-    global.enum_._(params_(String), function (items) {
-        return enum_(null, items);
+    global.enum_._(params_(String), function (eles) {
+        //Declare an enumeration.
+        //eles: the elements of the enumeration.
+
+        return enum_(null, eles);
     });
 
     /* VEJIS CLASS ENHANCING */
