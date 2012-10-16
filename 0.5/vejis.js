@@ -2,6 +2,8 @@
     VEJIS JavaScript Framework v0.5.0.121016
     http://vejis.org
 
+    $Id$
+
     This version is still preliminary and subject to change.
     
     Copyright 2012, VILIC VANE
@@ -1003,6 +1005,14 @@ function () {
             }
         };
 
+        this.getModule = function (name) {
+            var info = infos(name);
+            if (info)
+                return info.module;
+            else
+                return undefined;
+        };
+
         var createClass = _(String, Function, function (name, ClassBody) {
             return this[name] = class_(name, ClassBody);
         });
@@ -1046,6 +1056,16 @@ function () {
 
     global.use_ = _(params_(String), Function, function (names, handler) {
         moduleInvoker.addUse(names, handler);
+    });
+
+    global.import_ = (String, function (name) {
+        var module = moduleInvoker.getModule(name);
+        if (module)
+            return module;
+        else {
+            warn('module "' + name + '" has not been loaded.');
+            return undefined;
+        }
     });
 
     var requiredFiles = {};

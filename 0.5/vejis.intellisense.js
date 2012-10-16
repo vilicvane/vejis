@@ -739,9 +739,11 @@ function () {
 
                     inside = inside.replace(re, function (m, g1) {
                         param.description = g1;
-                        return "";
+                        return "\n";
                     });
                 }
+
+                inside = inside.replace(/(?:^|\s*\n)\s*\n[\s\S]*$/, "");
 
                 signatures.push({
                     description: inside,
@@ -1210,6 +1212,14 @@ function () {
             }
         };
 
+        this.getModule = function (name) {
+            var info = infos(name);
+            if (info)
+                return info.module;
+            else
+                return undefined;
+        };
+
         var createClass = _(String, Function, function (name, ClassBody) {
             return this[name] = class_(name, ClassBody);
         });
@@ -1253,6 +1263,19 @@ function () {
 
     global.use_ = _(params_(String), Function, function (names, handler) {
         moduleInvoker.addUse(names, handler);
+    });
+
+    global.import_ = _(String, function (name) {
+        //Returns a module object by the name given.
+        //name: name of the module.
+
+        var module = moduleInvoker.getModule(name);
+        if (module)
+            return module;
+        else {
+            warn('module "' + name + '" has not been loaded.');
+            return undefined;
+        }
     });
 
     var requiredFiles = {};
