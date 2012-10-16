@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.4
+    VEJIS JavaScript Framework v0.5.0.5
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -72,9 +72,19 @@ function () {
         switch (typeof object) {
             case "object":
             case "function":
+                if (object) {
+                    var constructor = object.constructor;
+                    while (constructor) {
+                        if (constructor == Type || constructor.prototype instanceof Type)
+                            return true;
+                        try{ constructor = constructor.__classInfo__.inheritInfo.Class; }
+                        catch (e) { constructor = null; }
+                    }
+                }
             case "undefined":
                 return object instanceof Type;
             default:
+                //for string, number and boolean
                 return new object.constructor() instanceof Type;
         }
     }
@@ -752,7 +762,7 @@ function () {
 
     global.enum_ = _(String, List(String), enum_);
     global.enum_._(params_(String), function (items) {
-        return enum_(null, items);
+        return enum_("", items);
     });
 
     /* VEJIS CLASS ENHANCING */
@@ -763,7 +773,8 @@ function () {
         var info = {
             inheritInfo: undefined,
             staticBody: undefined,
-            ClassBody: ClassBody
+            ClassBody: ClassBody,
+            Class: undefined
         };
 
         var relatedInstance;
@@ -809,12 +820,7 @@ function () {
                 var type = typeof ins;
                 if (type == "function" || type == "object") {
                     copy(this, ins, false);
-                    if (!relatedInstance) {
-                        var RelatedClass = function () { };
-                        RelatedClass.prototype = Class.prototype;
-                        relatedInstance = new RelatedClass();
-                    }
-                    ins.__relatedInstance__ = relatedInstance;
+                    ins.constructor = Class;
                 }
             }
 
@@ -850,10 +856,8 @@ function () {
         Class.inherit_ = _(Function, function (BaseClass) {
             delete Class.inherit_;
 
-            Class.prototype = BaseClass.prototype;
-
             var inheritInfo = BaseClass.__classInfo__;
-
+            
             if (inheritInfo) {
                 info.inheritInfo = inheritInfo;
 
@@ -868,7 +872,8 @@ function () {
             }
             else {
                 info.inheritInfo = {
-                    ClassBody: BaseClass
+                    ClassBody: BaseClass,
+                    Class: BaseClass
                 };
             }
             
@@ -881,6 +886,8 @@ function () {
 
             return Class;
         });
+
+        info.Class = Class;
 
         return Class;
     }

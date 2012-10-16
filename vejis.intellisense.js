@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS Intellisense file v0.5.0.4
+    VEJIS Intellisense file v0.5.0.5
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -103,9 +103,19 @@ function () {
         switch (typeof object) {
             case "object":
             case "function":
+                if (object) {
+                    var constructor = object.constructor;
+                    while (constructor) {
+                        if (constructor == Type || constructor.prototype instanceof Type)
+                            return true;
+                        try { constructor = constructor.__classInfo__.inheritInfo.Class; }
+                        catch (e) { constructor = null; }
+                    }
+                }
             case "undefined":
                 return object instanceof Type;
             default:
+                //for string, number and boolean
                 return new object.constructor() instanceof Type;
         }
     }
@@ -895,8 +905,8 @@ function () {
     }).as_(Boolean);
 
     function enum_(name, eles) {
-        //Declare an enumeration.
-        //name: the name of the enumeration.
+        //Create an enumeration.
+        //name: name of the enumeration.
         //eles: the elements of the enumeration.
 
         var count = eles.length;
@@ -933,18 +943,23 @@ function () {
         //Declare an enumeration.
         //eles: the elements of the enumeration.
 
-        return enum_(null, eles);
+        return enum_("", eles);
     });
 
     /* VEJIS CLASS ENHANCING */
 
     function class_(name, ClassBody) {
+        //Create a class.
+        //name: name of the class.
+        //ClassBody: a function that builds the class.
+
         var pri = {};
 
         var info = {
             inheritInfo: undefined,
             staticBody: undefined,
-            ClassBody: ClassBody
+            ClassBody: ClassBody,
+            Class: undefined
         };
 
         var relatedInstance;
@@ -1001,12 +1016,7 @@ function () {
                 var type = typeof ins;
                 if (type == "function" || type == "object") {
                     copy(this, ins, false);
-                    if (!relatedInstance) {
-                        var RelatedClass = function () { };
-                        RelatedClass.prototype = Class.prototype;
-                        relatedInstance = new RelatedClass();
-                    }
-                    ins.__relatedInstance__ = relatedInstance;
+                    ins.constructor = Class;
                 }
             }
 
@@ -1048,8 +1058,6 @@ function () {
 
             new BaseClass();
 
-            Class.prototype = BaseClass.prototype;
-
             var inheritInfo = BaseClass.__classInfo__;
 
             if (inheritInfo) {
@@ -1066,7 +1074,8 @@ function () {
             }
             else {
                 info.inheritInfo = {
-                    ClassBody: BaseClass
+                    ClassBody: BaseClass,
+                    Class: BaseClass
                 };
             }
             
@@ -1079,6 +1088,8 @@ function () {
 
             return Class;
         });
+
+        info.Class = Class;
 
         zeroTimer.add(function () {
             new Class();
@@ -1105,6 +1116,10 @@ function () {
     }
 
     function interface_(name, body) {
+        //Create an interface.
+        //name: name of the interface.
+        //body: an object describes the interface.
+
         var ins = {};
         var list = [];
         var hash = {};
@@ -1273,14 +1288,26 @@ function () {
         };
 
         var createClass = _(String, Function, function (name, ClassBody) {
+            //Create a class.
+            //name: name of the class.
+            //ClassBody: a function that builds the class.
+            
             return this[name] = class_(name, ClassBody);
         });
 
         var createInterface = _(String, PlainObject, function (name, body) {
+            //Create an interface.
+            //name: name of the interface.
+            //body: an object describes the interface.
+
             return this[name] = interface_(name, body);
         });
 
         var createEnum = _(String, List(String), function (name, items) {
+            //Create an enumeration.
+            //name: name of the enumeration.
+            //eles: the elements of the enumeration.
+
             return this[name] = enum_(name, items);
         });
 
