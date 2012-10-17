@@ -285,6 +285,7 @@ function () {
 
         var delegate = {
             __type__: ParamType.delegate,
+            __RelatedTypes__: ParamTypes,
             __demoInstance__: demoIns,
             __isInstance__: function (object) {
                 return typeof object == "function";
