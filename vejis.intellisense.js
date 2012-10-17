@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS Intellisense file v0.5.0.6
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.7
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -306,6 +306,10 @@ function () {
             bind_: function (object) {
                 /// <summary>Bind the value of this for this delegate.</summary>
                 /// <param name="object" type="Object">value of this.</param>
+                if (!is_(object, Object)) {
+                    error();
+                    return;
+                }
                 delegate.__relatedThisObject__ = { value: object };
                 delete delegate.with_;
                 delete delegate.bind_;
@@ -429,6 +433,10 @@ function () {
             method.bind_ = function (object) {
                 /// <summary>Bind the value of this for this overload.</summary>
                 /// <param name="object" type="Object">value of this.</param>
+                if (!is_(object, Object)) {
+                    error();
+                    return;
+                }
                 overload.thisObject = { value: object };
                 delete method.with_;
                 delete method.bind_;
@@ -1099,8 +1107,6 @@ function () {
         return Class;
     }
 
-    global.class_ = _(opt_(String), Function, class_);
-
     function buildStatic(pub, pri, staticBody, overwrite) {
         var o = {
             private_: _(PlainObject, function (priBody) {
@@ -1115,6 +1121,8 @@ function () {
 
         staticBody.call(o, pub, pri);
     }
+
+    global.class_ = _(opt_(String), Function, class_);
 
     function interface_(name, body) {
         //Create an interface.

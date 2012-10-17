@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.5
+    VEJIS JavaScript Framework v0.5.0.6
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -260,6 +260,10 @@ function () {
                 return delegate;
             },
             bind_: function (object) {
+                if (!is_(object, Object)) {
+                    error();
+                    return;
+                }
                 delegate.__relatedThisObject__ = { value: object };
                 delete delegate.with_;
                 delete delegate.bind_;
@@ -335,6 +339,10 @@ function () {
             };
 
             method.bind_ = function (object) {
+                if (!is_(object, Object)) {
+                    error();
+                    return;
+                }
                 overload.thisObject = { value: object };
                 delete method.with_;
                 delete method.bind_;
@@ -603,6 +611,7 @@ function () {
                 if (result.match)
                     return result.value;
             }
+
             error("no overload matches arguments given.");
         };
 
@@ -892,8 +901,6 @@ function () {
         return Class;
     }
 
-    global.class_ = _(opt_(String), Function, class_);
-
     function buildStatic(pub, pri, staticBody, overwrite) {
         var o = {
             private_: _(PlainObject, function (priBody) {
@@ -908,6 +915,8 @@ function () {
 
         staticBody.call(o, pub, pri);
     }
+
+    global.class_ = _(opt_(String), Function, class_);
 
     function interface_(name, body) {
         var list = [];
@@ -1109,7 +1118,7 @@ function () {
         moduleInvoker.addUse(names, handler);
     });
 
-    global.import_ = (String, function (name) {
+    global.import_ = _(String, function (name) {
         var module = moduleInvoker.getModule(name);
         if (module)
             return module;
