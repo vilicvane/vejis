@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.7
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.8
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -240,47 +240,62 @@ function () {
         };
     }
 
-    function delegate_(Types, body) {
+    function delegate_(name, Types, body) {
         /// <summary>Create a delegate.</summary>
-        /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
+        /// <param name="name" type="String" optional="true">name of the delegate.</param>
+        /// <param name="Types" type="Type..." optional="true">parameter types.</param>
         /// <param name="body" type="Function?">a template function.</param>
 
-        if (arguments.length == 0) {
-            error("at least one argument is required.");
+        var dName = "";
+
+        var i = 0;
+        if (is_(arguments[i], String)) {
+            dName = arguments[i];
+            i++;
+        }
+
+        var ParamTypes;
+        var fn;
+
+        if (is_(arguments[i], Array))
+            ParamTypes = arguments[i++];
+        else {
+            var typesEnd = arguments.length - 1;
+            ParamTypes = [];
+            for (i; i < typesEnd; i++)
+                ParamTypes.push(arguments[i]);
+        }
+
+        if (arguments.length <= i) {
+            error('"fn" is missing.');
             return;
         }
 
+        fn = arguments[i];
+
         var typeNames = [];
-
-        var ParamTypes = [];
-        var typesLength = arguments.length - 1;
-
-        for (var i = 0; i < typesLength; i++) {
-            var Type = arguments[i];
-
+        for (i = 0; i < ParamTypes.length; i++) {
+            var Type = ParamTypes[i];
             if (!isTypeMark(Type) && !isType(Type)) {
                 error("invalid parameter type.");
                 return;
             }
-
-            ParamTypes.push(Type);
             typeNames.push(getTypeName(Type));
         }
 
-        body = arguments[typesLength];
-        if (body == null)
-            body = function () { };
+        if (fn == null)
+            fn = function () { };
 
-        if (typeof body != "function") {
-            error('"body" should be null or a function.');
+        if (typeof fn != "function") {
+            error('"fn" should be null or a function.');
             return;
         }
 
-        var names = body.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
-        for (var i = 0; i < typeNames.length; i++)
+        var names = fn.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
+        for (i = 0; i < typeNames.length; i++)
             typeNames[i] += " " + (names[i] || "p" + (i + 1));
 
-        var args = ParamTypes.concat(body);
+        var args = ParamTypes.concat(fn);
         var demoIns = _.apply(null, args);
 
         var delegate = {
@@ -290,7 +305,7 @@ function () {
             __isInstance__: function (object) {
                 return typeof object == "function";
             },
-            __name__: "delegate(" + typeNames.join(", ") + ")",
+            __name__: (dName || "delegate") + "(" + typeNames.join(", ") + ")",
             with_: function (Type) {
                 /// <summary>Set the type of this for this delegate.</summary>
                 /// <param name="Type" type="Type">type of this.</param>
@@ -554,7 +569,7 @@ function () {
             }
         }
 
-        "IS PART",
+        "Auto invoke for intellisense",
         function () {
             fn.__beforeInvoke__ = beforeInvoke;
             zeroTimer.add(function () {
@@ -609,7 +624,7 @@ function () {
                     return result;
 
                 if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
                     if (Type.__relatedThisObject__)
                         arg.bind_(Type.__relatedThisObject__.value);
                     else if (Type.__RelatedThisType__)
@@ -635,7 +650,7 @@ function () {
                     return result;
 
                 if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
                     if (Type.__relatedThisObject__)
                         arg.bind_(Type.__relatedThisObject__.value);
                     else if (Type.__RelatedThisType__)
@@ -664,7 +679,7 @@ function () {
                         return result;
 
                     if (Type.__type__ == ParamType.delegate) {
-                        arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                        arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
                         if (Type.__relatedThisObject__)
                             arg.bind_(Type.__relatedThisObject__.value);
                         else if (Type.__RelatedThisType__)
@@ -687,7 +702,7 @@ function () {
                     return result;
 
                 if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
                     if (Type.__relatedThisObject__)
                         arg.bind_(Type.__relatedThisObject__.value);
                     else if (Type.__RelatedThisType__)
@@ -1034,6 +1049,9 @@ function () {
             //    return;
             //}
 
+            if (theInterface)
+                interfaceFormat(ins || this, theInterface);
+
             return ins;
         };
 
@@ -1045,6 +1063,9 @@ function () {
         };
 
         Class.static_ = _(PlainObject, function (body) {
+            //Define a private static object.
+            //body: a plain object.
+
             delete Class.static_;
             info.staticBody = body;
 
@@ -1054,6 +1075,9 @@ function () {
         });
 
         Class.static_._(Function, function (body) {
+            //Define static objects.
+            //body: a function contains "this.private_" or "this.public_" method(s) that defines private or public static object.
+
             delete Class.static_;
             info.staticBody = body;
 
@@ -1063,6 +1087,9 @@ function () {
         });
 
         Class.inherit_ = _(Function, function (BaseClass) {
+            //Inherit from a class.
+            //BaseClass: the base class, can be either a classic class or a VEJIS class.
+
             delete Class.inherit_;
 
             new BaseClass();
@@ -1091,9 +1118,15 @@ function () {
             return Class;
         });
 
-        Class.inherit_._(Interface, function (Interface) {
+        Class.implement_ = _(Interface, function (Interface) {
+            //Implement an interface.
+            //Interface: the interface to be implemented.
+
             delete Class.inherit_;
+            delete Class.implement_;
             theInterface = Interface;
+
+            new Class();
 
             return Class;
         });
@@ -1120,6 +1153,28 @@ function () {
         };
 
         staticBody.call(o, pub, pri);
+    }
+
+    function interfaceFormat(ins, theInterface) {
+        var list = theInterface.__list__;
+        for (var i = 0; i < list.length; i++) {
+            var item = list[i];
+            var name = item.name;
+            var Type = item.Type;
+            var p = ins[name];
+            if (Type.__type__ == ParamType.delegate) {
+                p = _.apply(null, Type.__RelatedTypes__.concat(p));
+                if (Type.__relatedThisObject__)
+                    p.bind_(Type.__relatedThisObject__.value);
+                else if (Type.__RelatedThisType__)
+                    p.with_(Type.__RelatedThisType__);
+                if (Type.__RelatedReturnType__)
+                    p.as_(Type.__RelatedReturnType__);
+                ins[name] = p;
+            }
+            else if (is_(Type, Interface))
+                interfaceFormat(p, Type);
+        }
     }
 
     global.class_ = _(opt_(String), Function, class_);
@@ -1246,15 +1301,18 @@ function () {
 
             var module = info.module;
 
+            //the order of the code below is reversed comparing with vejis.js
+            //start
+            if (builder)
+                builder.call(module);
+
             if (info.created) {
                 warn('module "' + name + '" already exists.');
                 return;
             }
 
             info.created = true;
-
-            if (builder)
-                builder.call(module);
+            //end
 
             if (parts.length > 0) {
                 var start = name + "/";
@@ -1274,9 +1332,10 @@ function () {
                 info.ready = true;
 
                 if (info.isRoot) {
+                    delete module.delegate_;
+                    delete module.enum_;
                     delete module.class_;
                     delete module.interface_;
-                    delete module.enum_;
                 }
 
                 var callbacks = info.callbacks;
@@ -1296,6 +1355,28 @@ function () {
                 return undefined;
         };
 
+        var createDelegate = function (name, Types, body) {
+            /// <summary>Create a delegate.</summary>
+            /// <param name="name" type="String">name of the delegate.</param>
+            /// <param name="Types" type="Type..." optional="true">parameter types.</param>
+            /// <param name="body" type="Function?">a template function.</param>
+
+            if (!is_(name, String) || name.length == 0) {
+                error('"name" must be a non-empty string.');
+                return;
+            }
+
+            return this[name] = delegate_.apply(this, arguments);
+        };
+
+        var createEnum = _(String, List(String), function (name, items) {
+            //Create an enumeration.
+            //name: name of the enumeration.
+            //eles: the elements of the enumeration.
+
+            return this[name] = enum_(name, items);
+        });
+
         var createClass = _(String, Function, function (name, ClassBody) {
             //Create a class.
             //name: name of the class.
@@ -1312,14 +1393,6 @@ function () {
             return this[name] = interface_(name, body);
         });
 
-        var createEnum = _(String, List(String), function (name, items) {
-            //Create an enumeration.
-            //name: name of the enumeration.
-            //eles: the elements of the enumeration.
-
-            return this[name] = enum_(name, items);
-        });
-
         function getInfo(name) {
             var baseName = name.match(/^[^\/]+/)[0];
 
@@ -1330,9 +1403,10 @@ function () {
             if (!info) {
                 info = {
                     module: isRoot ? {
+                        delegate_: createDelegate,
+                        enum_: createEnum,
                         class_: createClass,
-                        interface_: createInterface,
-                        enum_: createEnum
+                        interface_: createInterface
                     } : getInfo(baseName).module,
                     isRoot: isRoot,
                     ready: false,
@@ -1400,6 +1474,13 @@ function () {
         var length = srcs.length;
         for (var i = 0; i < length; i++) {
             var src = srcs[i];
+
+            if (!src.length) {
+                srcs.splice(i--, 1);
+                length--;
+                continue;
+            }
+
             var index = src.indexOf("/");
             if (index == 0) {
                 src = src.substr(1);

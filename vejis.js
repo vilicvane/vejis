@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.6
+    VEJIS JavaScript Framework v0.5.0.7
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -206,49 +206,63 @@ function () {
         };
     }
 
-    function delegate_(params_Type, body) {
-        if (arguments.length == 0) {
-            error("at least one argument is required.");
+    function delegate_(name, Types, body) {
+        var dName = "";
+
+        var i = 0;
+        if (is_(arguments[i], String)) {
+            dName = arguments[i];
+            i++;
+        }
+
+        var ParamTypes;
+        var fn;
+
+        if (is_(arguments[i], Array))
+            ParamTypes = arguments[i++];
+        else {
+            var typesEnd = arguments.length - 1;
+            ParamTypes = [];
+            for (i; i < typesEnd; i++)
+                ParamTypes.push(arguments[i]);
+        }
+
+        if (arguments.length <= i) {
+            error('"fn" is missing.');
             return;
         }
 
+        fn = arguments[i];
+
         var typeNames = [];
-
-        var Types = [];
-        var typesLength = arguments.length - 1;
-
-        for (var i = 0; i < typesLength; i++) {
-            var Type = arguments[i];
-
+        for (i = 0; i < ParamTypes.length; i++) {
+            var Type = ParamTypes[i];
             if (!isTypeMark(Type) && !isType(Type)) {
                 error("invalid parameter type.");
                 return;
             }
-
-            Types.push(Type);
             typeNames.push(getTypeName(Type));
         }
 
-        body = arguments[typesLength];
-        if (body == null)
-            body = function () { };
+        if (fn == null)
+            fn = function () { };
 
-        if (typeof body != "function") {
-            error('"body" should be null or a function.');
+        if (typeof fn != "function") {
+            error('"fn" should be null or a function.');
             return;
         }
 
-        var names = body.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
-        for (var i = 0; i < typeNames.length; i++)
+        var names = fn.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
+        for (i = 0; i < typeNames.length; i++)
             typeNames[i] += " " + (names[i] || "p" + (i + 1));
 
         var delegate = {
             __type__: ParamType.delegate,
-            __RelatedTypes__: Types,
+            __RelatedTypes__: ParamTypes,
             __isInstance__: function (object) {
                 return typeof object == "function";
             },
-            __name__: "delegate(" + typeNames.join(", ") + ")",
+            __name__: (dName || "delegate") + "(" + typeNames.join(", ") + ")",
             with_: function (Type) {
                 if (!isType(Type)) {
                     error('argument "Type" given is invalid.');
@@ -489,7 +503,7 @@ function () {
                     return result;
 
                 if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
                     if (Type.__relatedThisObject__)
                         arg.bind_(Type.__relatedThisObject__.value);
                     else if (Type.__RelatedThisType__)
@@ -515,7 +529,7 @@ function () {
                     return result;
 
                 if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
                     if (Type.__relatedThisObject__)
                         arg.bind_(Type.__relatedThisObject__.value);
                     else if (Type.__RelatedThisType__)
@@ -544,7 +558,7 @@ function () {
                         return result;
 
                     if (Type.__type__ == ParamType.delegate) {
-                        arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                        arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
                         if (Type.__relatedThisObject__)
                             arg.bind_(Type.__relatedThisObject__.value);
                         else if (Type.__RelatedThisType__)
@@ -567,7 +581,7 @@ function () {
                     return result;
 
                 if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(this, Type.__RelatedTypes__.concat(arg));
+                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
                     if (Type.__relatedThisObject__)
                         arg.bind_(Type.__relatedThisObject__.value);
                     else if (Type.__RelatedThisType__)
@@ -582,7 +596,7 @@ function () {
             var value = fn.apply(thisArg, destArgs);
 
             if (this.ReturnType && !is_(value, this.ReturnType)) {
-                error("the function returned a value (" + value + ") doesn't match the type (" + getTypeName(Type) + ") specified.");
+                error("the function returned a value (" + value + ") doesn't match the type (" + getTypeName(this.ReturnType) + ") specified.");
                 return;
             }
 
@@ -668,7 +682,7 @@ function () {
     global.Type = Type;
     global.Integer = Integer;
 
-    "add __name__",
+    "Add __name__",
     function () {
         for (var i in global) {
             if (typeof global[i] == "function" && /[A-Z]/.test(i.charAt(0)) && !global[i].__name__)
@@ -833,9 +847,14 @@ function () {
                 }
             }
 
-            if (theInterface && !is_(ins || this, theInterface)) {
-                error("some of the items defined in the interface are not implemented.");
-                return;
+            if (theInterface) {
+                var o = ins || this;
+                if (!is_(o, theInterface)) {
+                    error("some of the items defined in the interface are not implemented.");
+                    return;
+                }
+
+                interfaceFormat(o, theInterface);
             }
 
             return ins;
@@ -888,9 +907,10 @@ function () {
             
             return Class;
         });
-
-        Class.inherit_._(Interface, function (Interface) {
+        
+        Class.implement_ = _(Interface, function (Interface) {
             delete Class.inherit_;
+            delete Class.implement_;
             theInterface = Interface;
 
             return Class;
@@ -914,6 +934,28 @@ function () {
         };
 
         staticBody.call(o, pub, pri);
+    }
+
+    function interfaceFormat(ins, theInterface) {
+        var list = theInterface.__list__;
+        for (var i = 0; i < list.length; i++) {
+            var item = list[i];
+            var name = item.name;
+            var Type = item.Type;
+            var p = ins[name];
+            if (Type.__type__ == ParamType.delegate) {
+                p = _.apply(null, Type.__RelatedTypes__.concat(p));
+                if (Type.__relatedThisObject__)
+                    p.bind_(Type.__relatedThisObject__.value);
+                else if (Type.__RelatedThisType__)
+                    p.with_(Type.__RelatedThisType__);
+                if (Type.__RelatedReturnType__)
+                    p.as_(Type.__RelatedReturnType__);
+                ins[name] = p;
+            }
+            else if (is_(Type, Interface))
+                interfaceFormat(p, Type);
+        }
     }
 
     global.class_ = _(opt_(String), Function, class_);
@@ -1046,9 +1088,10 @@ function () {
                 info.ready = true;
 
                 if (info.isRoot) {
+                    delete module.delegate_;
+                    delete module.enum_;
                     delete module.class_;
                     delete module.interface_;
-                    delete module.enum_;
                 }
 
                 var callbacks = info.callbacks;
@@ -1068,16 +1111,25 @@ function () {
                 return undefined;
         };
 
+        var createDelegate = function (name, Types, body) {
+            if (!is_(name, String) || name.length == 0) {
+                error('"name" must be a non-empty string.');
+                return;
+            }
+
+            return this[name] = delegate_.apply(this, arguments);
+        };
+
+        var createEnum = _(String, List(String), function (name, items) {
+            return this[name] = enum_(name, items);
+        });
+
         var createClass = _(String, Function, function (name, ClassBody) {
             return this[name] = class_(name, ClassBody);
         });
 
         var createInterface = _(String, PlainObject, function (name, body) {
             return this[name] = interface_(name, body);
-        });
-
-        var createEnum = _(String, List(String), function (name, items) {
-            return this[name] = enum_(name, items);
         });
 
         function getInfo(name) {
@@ -1090,9 +1142,10 @@ function () {
             if (!info) {
                 info = {
                     module: isRoot ? {
+                        delegate_: createDelegate,
+                        enum_: createEnum,
                         class_: createClass,
-                        interface_: createInterface,
-                        enum_: createEnum
+                        interface_: createInterface
                     } : getInfo(baseName).module,
                     isRoot: isRoot,
                     ready: false,
