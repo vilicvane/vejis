@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS Intellisense file v0.5.0.5
+    VEJIS Intellisense file v0.5.0.6
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -1387,6 +1387,22 @@ function () {
     function require_(srcs) {
         //Require script files by adding script tags.
         //srcs: the srcs.
+
+        var length = srcs.length;
+        for (var i = 0; i < length; i++) {
+            var src = srcs[i];
+            var index = src.indexOf("/");
+            if (index == 0) {
+                src = src.substr(1);
+                srcs.push(src);
+            }
+
+            for (var i = 0; i < 5; i++) {
+                src = "../" + src;
+                srcs.push(src);
+            }
+        }
+
         var head = document.getElementsByTagName("head")[0];
         for (var i = 0; i < srcs.length; i++) {
             var src = srcs[i];
