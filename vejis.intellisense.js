@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.10
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.11
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -245,7 +245,7 @@ function () {
             __type__: ParamType.normal,
             __nullable__: true,
             __isInstance__: function (object) {
-                return object === null || is_(object, Type); // returns true when object is undefined.
+                return object == null || is_(object, Type); // returns true when object is undefined.
             },
             __getDemoInstance__: function () {
                 var ins = getInstance(Type);
@@ -326,7 +326,9 @@ function () {
             __type__: ParamType.delegate,
             __RelatedTypes__: ParamTypes,
             __getDemoInstance__: function () {
-                return wrapDelegate(fn, delegate);
+                var ins = wrapDelegate(fn, delegate);
+                ins.constructor = delegate;
+                return ins;
             },
             __isInstance__: function (object) {
                 return typeof object == "function";
@@ -1055,7 +1057,7 @@ function () {
 
         var Class = function () {
             var that = this;
-            var callByTimeout = !!arguments[0];
+            var callByTimeout = is_(arguments[0], TimeoutMark);
 
             if (theInterface) 
                 copy(theInterface.__getDemoInstance__(), this, true);
@@ -1204,8 +1206,10 @@ function () {
         info.Class = Class;
 
         setTimeout(function () {
-            new Class(true);
+            new Class(new TimeoutMark());
         }, 0);
+
+        function TimeoutMark() { }
 
         return Class;
     }
@@ -1232,10 +1236,13 @@ function () {
             var name = item.name;
             var Type = item.Type;
             var p = ins[name];
+
             if (Type.__type__ == ParamType.delegate) {
                 if (typeof p != "function")
                     p = function () { };
                 ins[name] = wrapDelegate(p, Type);
+                if (ins[name].bind_)
+                    ins[name].bind_(ins);
             }
             else if (is_(Type, Interface)) {
                 if (typeof p != "object" && typeof p != "function" || p == null)
