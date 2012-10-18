@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.7
+    VEJIS JavaScript Framework v0.5.0.9
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -77,8 +77,13 @@ function () {
                     while (constructor) {
                         if (constructor == Type || constructor.prototype instanceof Type)
                             return true;
-                        try{ constructor = constructor.__classInfo__.inheritInfo.Class; }
-                        catch (e) { constructor = null; }
+                        if (
+                            constructor.__classInfo__ &&
+                            constructor.__classInfo__.inheritInfo
+                        )
+                            constructor = constructor.__classInfo__.inheritInfo.Class;
+                        else
+                            constructor = null;
                     }
                 }
             case "undefined":
@@ -252,7 +257,7 @@ function () {
             return;
         }
 
-        var names = fn.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
+        var names = fn.toString().match(/\((.*?)\)/)[1].match(/[^,\s]+/g) || [];
         for (i = 0; i < typeNames.length; i++)
             typeNames[i] += " " + (names[i] || "p" + (i + 1));
 
@@ -404,6 +409,17 @@ function () {
         return name;
     }
 
+    function wrapDelegate(fn, Delegate) {
+        fn = _.apply(null, Delegate.__RelatedTypes__.concat(fn));
+        if (Delegate.__relatedThisObject__)
+            fn.bind_(Delegate.__relatedThisObject__.value);
+        else if (Delegate.__RelatedThisType__)
+            fn.with_(Delegate.__RelatedThisType__);
+        if (Delegate.__RelatedReturnType__)
+            fn.as_(Delegate.__RelatedReturnType__);
+        return fn;
+    }
+
     global._ = _;
     global.opt_ = opt_;
     global.params_ = params_;
@@ -502,15 +518,8 @@ function () {
                 if (!is_(arg, Type))
                     return result;
 
-                if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
-                    if (Type.__relatedThisObject__)
-                        arg.bind_(Type.__relatedThisObject__.value);
-                    else if (Type.__RelatedThisType__)
-                        arg.with_(Type.__RelatedThisType__);
-                    if (Type.__RelatedReturnType__)
-                        arg.as_(Type.__RelatedReturnType__);
-                }
+                if (Type.__type__ == ParamType.delegate)
+                    arg = wrapDelegate(arg, Type);
 
                 destArgs.push(arg);
             }
@@ -528,15 +537,8 @@ function () {
                 if (!is_(arg, Type))
                     return result;
 
-                if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
-                    if (Type.__relatedThisObject__)
-                        arg.bind_(Type.__relatedThisObject__.value);
-                    else if (Type.__RelatedThisType__)
-                        arg.with_(Type.__RelatedThisType__);
-                    if (Type.__RelatedReturnType__)
-                        arg.as_(Type.__RelatedReturnType__);
-                }
+                if (Type.__type__ == ParamType.delegate)
+                    arg = wrapDelegate(arg, Type);
 
                 destArgs.push(arg);
             }
@@ -557,15 +559,8 @@ function () {
                     if (!is_(arg, Type))
                         return result;
 
-                    if (Type.__type__ == ParamType.delegate) {
-                        arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
-                        if (Type.__relatedThisObject__)
-                            arg.bind_(Type.__relatedThisObject__.value);
-                        else if (Type.__RelatedThisType__)
-                            arg.with_(Type.__RelatedThisType__);
-                        if (Type.__RelatedReturnType__)
-                            arg.as_(Type.__RelatedReturnType__);
-                    }
+                    if (Type.__type__ == ParamType.delegate)
+                        arg = wrapDelegate(arg, Type);
 
                     paArray.push(arg);
                 }
@@ -580,15 +575,8 @@ function () {
                 if (!is_(arg, Type))
                     return result;
 
-                if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
-                    if (Type.__relatedThisObject__)
-                        arg.bind_(Type.__relatedThisObject__.value);
-                    else if (Type.__RelatedThisType__)
-                        arg.with_(Type.__RelatedThisType__);
-                    if (Type.__RelatedReturnType__)
-                        arg.as_(Type.__RelatedReturnType__);
-                }
+                if (Type.__type__ == ParamType.delegate)
+                    arg = wrapDelegate(arg, Type);
 
                 destArgs.push(arg);
             }
@@ -836,19 +824,23 @@ function () {
 
             delete this._;
 
-            if (constructor)
-                constructor.apply(this, arguments);
+            if (!constructor)
+                constructor = _.call(null, function () { });
+
+            constructor.apply(this, arguments);
+
+            var o = this;
 
             if (ins) {
                 var type = typeof ins;
                 if (type == "function" || type == "object") {
                     copy(this, ins, false);
                     ins.constructor = Class;
+                    o = ins;
                 }
             }
 
             if (theInterface) {
-                var o = ins || this;
                 if (!is_(o, theInterface)) {
                     error("some of the items defined in the interface are not implemented.");
                     return;
@@ -1120,8 +1112,8 @@ function () {
             return this[name] = delegate_.apply(this, arguments);
         };
 
-        var createEnum = _(String, List(String), function (name, items) {
-            return this[name] = enum_(name, items);
+        var createEnum = _(String, List(String), function (name, eles) {
+            return this[name] = enum_(name, eles);
         });
 
         var createClass = _(String, Function, function (name, ClassBody) {

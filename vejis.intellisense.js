@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.8
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.9
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -17,7 +17,8 @@ function () {
     var hasOwnProperty = Object.prototype.hasOwnProperty;
     var slice = Array.prototype.slice;
 
-    var zeroTimer = new function () {
+    "Override setTimeout",
+    function () {
         var on = false;
         var handlers = [];
         var setTimeout = global.setTimeout;
@@ -28,13 +29,13 @@ function () {
             /// <param name="timeout" type="Object" optional="true"></param>
             /// <param name="args" type="Object"></param>
             /// <returns type="Number" />
-            zeroTimer.add(function () {
+            addTimeout(function () {
                 handler.apply(null, args);
             });
             return 0;
         };
 
-        this.add = function (handler) {
+        function addTimeout(handler) {
             handlers.push(handler);
             if (!on) {
                 on = true;
@@ -45,7 +46,7 @@ function () {
                     handlers.length = 0;
                 }, 0);
             }
-        };
+        }
     }();
 
     /* COMMON METHODS */
@@ -108,8 +109,13 @@ function () {
                     while (constructor) {
                         if (constructor == Type || constructor.prototype instanceof Type)
                             return true;
-                        try { constructor = constructor.__classInfo__.inheritInfo.Class; }
-                        catch (e) { constructor = null; }
+                        if (
+                            constructor.__classInfo__ &&
+                            constructor.__classInfo__.inheritInfo
+                        )
+                            constructor = constructor.__classInfo__.inheritInfo.Class;
+                        else
+                            constructor = null;
                     }
                 }
             case "undefined":
@@ -194,7 +200,9 @@ function () {
             __type__: ParamType.option,
             RelatedType: Type,
             defaultValue: defaultValue,
-            __demoInstance__: getInstance(Type),
+            __getDemoInstance__: function () {
+                return getInstance(Type);
+            },
             __name__: getTypeName(Type)
         };
     }
@@ -213,7 +221,9 @@ function () {
         return {
             __type__: ParamType.params,
             RelatedType: Type,
-            __demoInstance__: [getInstance(Type)],
+            __getDemoInstance__: function () {
+                return List(Type).__getDemoInstance__();
+            },
             __name__: getTypeName(Type)
         };
     }
@@ -229,16 +239,32 @@ function () {
             return;
         }
 
-        return {
+        var name = getTypeName(Type) + "?";
+
+        var type = {
             __type__: ParamType.normal,
             __nullable__: true,
             __isInstance__: function (object) {
                 return object == null || is_(object, Type); // returns true when object is undefined.
             },
-            __demoInstance__: getInstance(Type),
-            __name__: getTypeName(Type) + "?"
+            __getDemoInstance__: function () {
+                var ins = getInstance(Type);
+                ins.constructor = constructor;
+                return ins;
+            },
+            __name__: name
         };
+
+        function constructor() {
+            return getInstance(type);
+        }
+
+        constructor.__name__ = name;
+
+        return type;
     }
+
+    function Delegate() { }
 
     function delegate_(name, Types, body) {
         /// <summary>Create a delegate.</summary>
@@ -291,17 +317,16 @@ function () {
             return;
         }
 
-        var names = fn.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
+        var names = fn.toString().match(/\((.*?)\)/)[1].match(/[^,\s]+/g) || [];
         for (i = 0; i < typeNames.length; i++)
             typeNames[i] += " " + (names[i] || "p" + (i + 1));
-
-        var args = ParamTypes.concat(fn);
-        var demoIns = _.apply(null, args);
 
         var delegate = {
             __type__: ParamType.delegate,
             __RelatedTypes__: ParamTypes,
-            __demoInstance__: demoIns,
+            __getDemoInstance__: function () {
+                return wrapDelegate(fn, delegate);
+            },
             __isInstance__: function (object) {
                 return typeof object == "function";
             },
@@ -344,6 +369,8 @@ function () {
                 return delegate;
             }
         };
+
+        delegate.constructor = Delegate;
 
         return delegate;
     }
@@ -389,11 +416,13 @@ function () {
                 return;
             }
 
+            intellisense.redirectDefinition(method, fn);
+
             var params =
             fn.__params__ = [];
             fn.__return__;
 
-            var names = fn.toString().match(/\((.*)\)/)[1].match(/[^,\s]+/g) || [];
+            var names = fn.toString().match(/\((.*?)\)/)[1].match(/[^,\s]+/g) || [];
 
             for (var i = 0; i < ParamTypes.length; i++) {
                 var Type = ParamTypes[i];
@@ -501,6 +530,17 @@ function () {
         return name;
     }
 
+    function wrapDelegate(fn, Delegate) {
+        fn = _.apply(null, Delegate.__RelatedTypes__.concat(fn));
+        if (Delegate.__relatedThisObject__)
+            fn.bind_(Delegate.__relatedThisObject__.value);
+        else if (Delegate.__RelatedThisType__)
+            fn.with_(Delegate.__RelatedThisType__);
+        if (Delegate.__RelatedReturnType__)
+            fn.as_(Delegate.__RelatedReturnType__);
+        return fn;
+    }
+
     global._ = _;
     global.opt_ = opt_;
     global.params_ = params_;
@@ -572,9 +612,9 @@ function () {
         "Auto invoke for intellisense",
         function () {
             fn.__beforeInvoke__ = beforeInvoke;
-            zeroTimer.add(function () {
+            setTimeout(function () {
                 fn.__beforeInvoke__();
-            });
+            }, 0);
 
             function beforeInvoke() {
                 fn.__beforeInvoke__ = function () { };
@@ -623,15 +663,8 @@ function () {
                 if (!is_(arg, Type))
                     return result;
 
-                if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
-                    if (Type.__relatedThisObject__)
-                        arg.bind_(Type.__relatedThisObject__.value);
-                    else if (Type.__RelatedThisType__)
-                        arg.with_(Type.__RelatedThisType__);
-                    if (Type.__RelatedReturnType__)
-                        arg.as_(Type.__RelatedReturnType__);
-                }
+                if (Type.__type__ == ParamType.delegate)
+                    arg = wrapDelegate(arg, Type);
 
                 destArgs.push(arg);
             }
@@ -649,15 +682,8 @@ function () {
                 if (!is_(arg, Type))
                     return result;
 
-                if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
-                    if (Type.__relatedThisObject__)
-                        arg.bind_(Type.__relatedThisObject__.value);
-                    else if (Type.__RelatedThisType__)
-                        arg.with_(Type.__RelatedThisType__);
-                    if (Type.__RelatedReturnType__)
-                        arg.as_(Type.__RelatedReturnType__);
-                }
+                if (Type.__type__ == ParamType.delegate)
+                    arg = wrapDelegate(arg, Type);
 
                 destArgs.push(arg);
             }
@@ -678,15 +704,8 @@ function () {
                     if (!is_(arg, Type))
                         return result;
 
-                    if (Type.__type__ == ParamType.delegate) {
-                        arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
-                        if (Type.__relatedThisObject__)
-                            arg.bind_(Type.__relatedThisObject__.value);
-                        else if (Type.__RelatedThisType__)
-                            arg.with_(Type.__RelatedThisType__);
-                        if (Type.__RelatedReturnType__)
-                            arg.as_(Type.__RelatedReturnType__);
-                    }
+                    if (Type.__type__ == ParamType.delegate)
+                        arg = wrapDelegate(arg, Type);
 
                     paArray.push(arg);
                 }
@@ -701,15 +720,8 @@ function () {
                 if (!is_(arg, Type))
                     return result;
 
-                if (Type.__type__ == ParamType.delegate) {
-                    arg = _.apply(null, Type.__RelatedTypes__.concat(arg));
-                    if (Type.__relatedThisObject__)
-                        arg.bind_(Type.__relatedThisObject__.value);
-                    else if (Type.__RelatedThisType__)
-                        arg.with_(Type.__RelatedThisType__);
-                    if (Type.__RelatedReturnType__)
-                        arg.as_(Type.__RelatedReturnType__);
-                }
+                if (Type.__type__ == ParamType.delegate)
+                    arg = wrapDelegate(arg, Type);
 
                 destArgs.push(arg);
             }
@@ -757,11 +769,38 @@ function () {
     }
 
     intellisense.addEventListener("signaturehelp", function (e) {
+        buildSignatures(e.target, e.functionHelp);
+    });
+
+    intellisense.addEventListener("statementcompletionhint", function (e) {
+        var value = e.completionItem.value;
+        var help;
+        if (typeof value == "function") {
+            help = e.symbolHelp.functionHelp;
+            buildSignatures(value, help);
+        }
+        else {
+            help = e.symbolHelp;
+            help.symbolDisplayType = getTypeName(value.constructor);
+
+            if (value.__interfaceDemo__)
+                help.description = "Not implemented. " + help.description;
+        }
+    });
+
+    intellisense.addEventListener('statementcompletion', function (e) {
+        var re = /^[^_]*_$/;
+        e.items = e.items.filter(function (item) {
+            return !re.test(item.name) || e.target.hasOwnProperty(item.name);
+        });
+    });
+
+    function buildSignatures(fn, functionHelp) {
         var overloads;
-        if (e.target.__overloads__)
-            overloads = e.target.__overloads__;
-        else if (e.target.__getConstructors__) 
-            overloads = e.target.__getConstructors__();
+        if (fn.__overloads__)
+            overloads = fn.__overloads__;
+        else if (fn.__getConstructors__)
+            overloads = fn.__getConstructors__();
 
         if (overloads) {
             var signatures = [];
@@ -785,7 +824,7 @@ function () {
                 inside = inside.replace(/(?:^|\s*\n)\s*\n[\s\S]*$/, "");
 
                 signatures.push({
-                    description: inside,
+                    description: (fn.__interfaceDemo__ ? "Not implemented. " : "") + inside,
                     params: params,
                     returnValue: {
                         type: overload.__return__ ? getTypeName(overload.__return__) : undefined,
@@ -793,9 +832,9 @@ function () {
                     }
                 });
             }
-            e.functionHelp.signatures = signatures;
+            functionHelp.signatures = signatures;
         }
-    });
+    }
 
     /* EXTENDED TYPES */
 
@@ -809,7 +848,10 @@ function () {
     });
 
     function List(Type) {
-        return {
+
+        var name = getTypeName(Type) + "[]";
+
+        var type = {
             __isInstance__: function (object) {
                 if (!is_(object, Array)) return false;
 
@@ -822,9 +864,21 @@ function () {
                 return true;
             },
             __relatedType__: List,
-            __demoInstance__: [getInstance(Type)],
-            __name__: getTypeName(Type) + "[]"
+            __getDemoInstance__: function () {
+                var ins = [getInstance(Type)];
+                ins.constructor = constructor;
+                return ins;
+            },
+            __name__: name
         };
+
+        function constructor() {
+            return getInstance(type);
+        }
+
+        constructor.__name__ = name;
+
+        return type;
     }
 
     function Type() {
@@ -862,7 +916,7 @@ function () {
 
     /* OTHER EXTENDED METHODS */
 
-    global.for_ = _(IList, delegate_(Object, Integer, Integer, null), function for_(array, handler) {
+    global.for_ = _(IList, delegate_(Object, Integer, Integer, function (value, i, length) { }), function for_(array, handler) {
         //Traverse an array, returns true if the traversal is completed.
         //array: the array to be traversed.
         //handler: the handler, return false to break traversal; and return a number to specify the increasement of i.
@@ -917,7 +971,7 @@ function () {
         return true;
     }).as_(Boolean);
 
-    global.forin_ = _(Object, delegate_(Object, String, null), function (object, handler) {
+    global.forin_ = _(Object, delegate_(Object, String, function (value, name) { }), function (object, handler) {
         //Traverse the properties of an object, returns true if the traversal is completed.
         //object: the target object.
         //handler: the handler, return false to break traversal.
@@ -954,7 +1008,9 @@ function () {
         };
 
         Enum.__name__ = name;
-        Enum.__demoInstance__ = new Enum("", 0);
+        Enum.__getDemoInstance__ = function () {
+            return new Enum("", 0);
+        };
 
         for (var i = 0; i < count; i++)
             var ele = Enum[eles[i]] = new Enum(eles[i], 1 << i);
@@ -987,14 +1043,16 @@ function () {
         };
 
         var relatedInstance;
+        var theInterface;
 
         var theConstructor;
 
         var Class = function () {
             var that = this;
+            var callByTimeout = !!arguments[0];
 
-            if (theInterface)
-                copy(theInterface.__demoInstance__, this, true);
+            if (theInterface) 
+                copy(theInterface.__getDemoInstance__(), this, true);
 
             var ClassBodies = [];
             var inheritInfo = info;
@@ -1030,17 +1088,25 @@ function () {
 
             delete this._;
 
-            if (constructor) {
-                constructor.apply(this, arguments);
-                if (!theConstructor)
+            if (!theConstructor) {
+                if (constructor)
                     theConstructor = constructor;
+                else
+                    theConstructor = _.call(null, ClassBody);
             }
+
+            if (!constructor)
+                constructor = _.call(null, function () { });
+            //constructor.apply(this, arguments);
+
+            var o = this;
 
             if (ins) {
                 var type = typeof ins;
                 if (type == "function" || type == "object") {
                     copy(this, ins, false);
                     ins.constructor = Class;
+                    o = ins;
                 }
             }
 
@@ -1050,7 +1116,7 @@ function () {
             //}
 
             if (theInterface)
-                interfaceFormat(ins || this, theInterface);
+                interfaceFormat(o, theInterface, callByTimeout);
 
             return ins;
         };
@@ -1086,9 +1152,9 @@ function () {
             return Class;
         });
 
-        Class.inherit_ = _(Function, function (BaseClass) {
-            //Inherit from a class.
-            //BaseClass: the base class, can be either a classic class or a VEJIS class.
+        Class.inherit_ = function (BaseClass) {
+            /// <summary>Inherit from a class.</summary>
+            /// <param name="BaseClass" type="Type">the base class, can be either a classic class or a VEJIS class.</param>
 
             delete Class.inherit_;
 
@@ -1116,26 +1182,24 @@ function () {
             }
             
             return Class;
-        });
+        };
 
-        Class.implement_ = _(Interface, function (Interface) {
-            //Implement an interface.
-            //Interface: the interface to be implemented.
+        Class.implement_ = function (Interface) {
+            /// <summary>Implement an interface.</summary>
+            /// <param name="Interface" type="Interface">the interface to be implemented.</param>
 
             delete Class.inherit_;
             delete Class.implement_;
             theInterface = Interface;
 
-            new Class();
-
             return Class;
-        });
+        };
 
         info.Class = Class;
 
-        zeroTimer.add(function () {
-            new Class();
-        });
+        setTimeout(function () {
+            new Class(true);
+        }, 0);
 
         return Class;
     }
@@ -1155,7 +1219,7 @@ function () {
         staticBody.call(o, pub, pri);
     }
 
-    function interfaceFormat(ins, theInterface) {
+    function interfaceFormat(ins, theInterface, callByTimeout) {
         var list = theInterface.__list__;
         for (var i = 0; i < list.length; i++) {
             var item = list[i];
@@ -1163,17 +1227,21 @@ function () {
             var Type = item.Type;
             var p = ins[name];
             if (Type.__type__ == ParamType.delegate) {
-                p = _.apply(null, Type.__RelatedTypes__.concat(p));
-                if (Type.__relatedThisObject__)
-                    p.bind_(Type.__relatedThisObject__.value);
-                else if (Type.__RelatedThisType__)
-                    p.with_(Type.__RelatedThisType__);
-                if (Type.__RelatedReturnType__)
-                    p.as_(Type.__RelatedReturnType__);
-                ins[name] = p;
+                if (typeof p != "function")
+                    p = function () { };
+                ins[name] = wrapDelegate(p, Type);
             }
-            else if (is_(Type, Interface))
-                interfaceFormat(p, Type);
+            else if (is_(Type, Interface)) {
+                if (typeof p != "object" && typeof p != "function" || p == null)
+                    ins[name] = p = {};
+                interfaceFormat(p, Type, callByTimeout);
+            }
+            else if (!is_(p, Type)) {
+                ins[name] = getInstance(Type);
+            }
+
+            if (!callByTimeout)
+                delete ins[name].__interfaceDemo__;
         }
     }
 
@@ -1184,7 +1252,6 @@ function () {
         //name: name of the interface.
         //body: an object describes the interface.
 
-        var ins = {};
         var list = [];
         var hash = {};
 
@@ -1192,6 +1259,7 @@ function () {
             if (hasOwnProperty.call(body, i)) {
                 var Type = body[i];
                 ins[i] = getInstance(Type);
+                ins[i].__interfaceDemo__ = true;
                 list.push({
                     name: i,
                     Type: Type
@@ -1202,7 +1270,17 @@ function () {
 
         var theInterface = new Interface();
 
-        theInterface.__demoInstance__ = ins;
+        theInterface.__getDemoInstance__ = function () {
+            var ins = {};
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i];
+                ins[item.name] = getInstance(item.Type);
+                ins[item.name].__interfaceDemo__ = true;
+            }
+            ins.constructor = theInterface;
+            return ins;
+        };
+
         theInterface.__isInstance__ = function (object) {
             if (!object) return false;
 
@@ -1246,8 +1324,8 @@ function () {
 
     function getInstance(Type) {
         var ins;
-        if (hasOwnProperty.call(Type, "__demoInstance__"))
-            ins = Type.__demoInstance__;
+        if (hasOwnProperty.call(Type, "__getDemoInstance__"))
+            ins = Type.__getDemoInstance__();
         else {
             try {
                 ins = new Type();
@@ -1255,6 +1333,7 @@ function () {
                 ins = Type.prototype;
             }
         }
+
         return ins;
     }
 
@@ -1369,12 +1448,12 @@ function () {
             return this[name] = delegate_.apply(this, arguments);
         };
 
-        var createEnum = _(String, List(String), function (name, items) {
+        var createEnum = _(String, List(String), function (name, eles) {
             //Create an enumeration.
             //name: name of the enumeration.
             //eles: the elements of the enumeration.
-
-            return this[name] = enum_(name, items);
+            
+            return this[name] = enum_(name, eles);
         });
 
         var createClass = _(String, Function, function (name, ClassBody) {
