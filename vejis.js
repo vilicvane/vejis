@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.9
+    VEJIS JavaScript Framework v0.5.0.10
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -205,7 +205,7 @@ function () {
             __type__: ParamType.normal,
             __nullable__: true,
             __isInstance__: function (object) {
-                return object == null || is_(object, Type); // returns true when object is undefined.
+                return object === null || is_(object, Type); // returns true when object is undefined.
             },
             __name__: getTypeName(Type) + "?"
         };
