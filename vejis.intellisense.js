@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.12
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.13
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -1056,10 +1056,26 @@ function () {
 
             var constructor, sup;
             
-            this._ = function (Types, fn) {
+            this._ = function (name, Types, fn) {
+                /// <signature>
                 /// <summary>Define a constructor.</summary>
                 /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
                 /// <param name="fn" type="Function">the related function.</param>
+                /// </signature>
+                /// <signature>
+                /// <summary>Define a VEJIS method.</summary>
+                /// <param name="name" type="String">name of the method</param>
+                /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
+                /// <param name="fn" type="Function">the related function.</param>
+                /// </signature>
+
+                if (is_(name, String)) {
+                    if (name.length == 0) {
+                        error('"name" must be a non-empty string.');
+                        return;
+                    }
+                    return this[name] = (this[name] && this[name]._ || _).apply(null, slice.call(arguments, 1)).bind_(this);
+                }
 
                 if (!constructor)
                     constructor = _.apply(this, arguments).bind_(this);
@@ -1425,6 +1441,7 @@ function () {
                 info.ready = true;
 
                 if (info.isRoot) {
+                    delete module._;
                     delete module.delegate_;
                     delete module.enum_;
                     delete module.class_;
@@ -1448,6 +1465,20 @@ function () {
                 return undefined;
         };
 
+        var createMethod = function (name, Types, fn) {
+            /// <summary>Create a VEJIS method.</summary>
+            /// <param name="name" type="String">name of the method.</param>
+            /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
+            /// <param name="fn" type="Function">the related function.</param>
+
+            if (!is_(name, String) || name.length == 0) {
+                error('"name" must be a non-empty string.');
+                return;
+            }
+
+            return this[name] = (this[name] && this[name]._ || _).apply(null, slice.call(arguments, 1)).bind_(this);
+        };
+
         var createDelegate = function (name, Types, body) {
             /// <summary>Create a delegate.</summary>
             /// <param name="name" type="String">name of the delegate.</param>
@@ -1459,7 +1490,7 @@ function () {
                 return;
             }
 
-            return this[name] = delegate_.apply(this, arguments);
+            return this[name] = delegate_.apply(null, arguments);
         };
 
         var createEnum = _(String, List(String), function (name, eles) {
@@ -1497,6 +1528,7 @@ function () {
                 info = {
                     module: isRoot ? {
                         constructor: Module,
+                        _: createMethod,
                         delegate_: createDelegate,
                         enum_: createEnum,
                         class_: createClass,

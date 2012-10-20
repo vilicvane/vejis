@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.12
+    VEJIS JavaScript Framework v0.5.0.13
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -788,7 +788,15 @@ function () {
 
             var constructor, sup;
 
-            this._ = function (params_Types, fn) {
+            this._ = function (opt_name, params_Types, fn) {
+                if (is_(name, String)) {
+                    if (name.length == 0) {
+                        error('"name" must be a non-empty string.');
+                        return;
+                    }
+                    return this[name] = (this[name] && this[name]._ || _).apply(null, slice.call(arguments, 1)).bind_(this);
+                }
+
                 if (!constructor)
                     constructor = _.apply(this, arguments).bind_(this);
                 else
@@ -1078,6 +1086,7 @@ function () {
                 info.ready = true;
 
                 if (info.isRoot) {
+                    delete module._;
                     delete module.delegate_;
                     delete module.enum_;
                     delete module.class_;
@@ -1101,13 +1110,22 @@ function () {
                 return undefined;
         };
 
+        var createMethod = function (name, params_Type, fn) {
+            if (!is_(name, String) || name.length == 0) {
+                error('"name" must be a non-empty string.');
+                return;
+            }
+
+            return this[name] = (this[name] && this[name]._ || _).apply(null, slice.call(arguments, 1)).bind_(this);
+        };
+
         var createDelegate = function (name, Types, body) {
             if (!is_(name, String) || name.length == 0) {
                 error('"name" must be a non-empty string.');
                 return;
             }
 
-            return this[name] = delegate_.apply(this, arguments);
+            return this[name] = delegate_.apply(null, arguments);
         };
 
         var createEnum = _(String, List(String), function (name, eles) {
@@ -1132,6 +1150,7 @@ function () {
             if (!info) {
                 info = {
                     module: isRoot ? {
+                        _: createMethod,
                         delegate_: createDelegate,
                         enum_: createEnum,
                         class_: createClass,
