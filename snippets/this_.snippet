@@ -1,0 +1,42 @@
+﻿<CodeSnippet Format="1.1.0" xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <Header>
+    <Title>with parameter</Title>
+    <Author>VILIC VANE</Author>
+    <Shortcut>this_</Shortcut>
+    <Description>Code snippet for a VEJIS method</Description>
+    <SnippetTypes>
+      <SnippetType>Expansion</SnippetType>
+      <SnippetType>SurroundsWith</SnippetType>
+    </SnippetTypes>
+  </Header>
+  <Snippet>
+    <Declarations>
+      <Literal>
+        <ID>name</ID>
+        <ToolTip>Name of the method</ToolTip>
+        <Default>fn</Default>
+      </Literal>
+      <Literal>
+        <ID>types</ID>
+        <ToolTip>Types of parameters</ToolTip>
+        <Default>Type</Default>
+      </Literal>
+      <Literal>
+        <ID>params</ID>
+        <ToolTip>Parameters</ToolTip>
+        <Default>parameter</Default>
+      </Literal>
+      <Literal>
+        <ID>comment</ID>
+        <ToolTip>Discription for this overload</ToolTip>
+        <Default>Description</Default>
+      </Literal>
+    </Declarations>
+    <Code Language="JavaScript">
+<![CDATA[this._("$name$", $types$, function ($params$) {
+    //$comment$
+    $selected$$end$
+});]]>
+    </Code>
+  </Snippet>
+</CodeSnippet>

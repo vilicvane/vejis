@@ -1,0 +1,29 @@
+﻿<CodeSnippet Format="1.1.0" xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <Header>
+    <Title>enum (begins with this)</Title>
+    <Author>VILIC VANE</Author>
+    <Shortcut>thisenum_</Shortcut>
+    <Description>Code snippet for an enum</Description>
+    <SnippetTypes>
+      <SnippetType>Expansion</SnippetType>
+      <SnippetType>SurroundsWith</SnippetType>
+    </SnippetTypes>
+  </Header>
+  <Snippet>
+    <Declarations>
+      <Literal>
+        <ID>name</ID>
+        <ToolTip>Name of the enumeration</ToolTip>
+        <Default>Enum</Default>
+      </Literal>
+      <Literal>
+        <ID>element</ID>
+        <ToolTip>Name of an element</ToolTip>
+        <Default>"element"</Default>
+      </Literal>
+    </Declarations>
+    <Code Language="JavaScript">
+<![CDATA[this.enum_("$name$", [$element$]);$end$]]>
+    </Code>
+  </Snippet>
+</CodeSnippet>

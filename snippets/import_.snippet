@@ -1,0 +1,30 @@
+﻿<CodeSnippet Format="1.1.0" xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <Header>
+    <Title>import</Title>
+    <Author>VILIC VANE</Author>
+    <Shortcut>import_</Shortcut>
+    <Description>Code snippet for importing a module</Description>
+    <SnippetTypes>
+      <SnippetType>Expansion</SnippetType>
+      <SnippetType>SurroundsWith</SnippetType>
+    </SnippetTypes>
+  </Header>
+  <Snippet>
+    <Declarations>
+      <Literal>
+        <ID>var</ID>
+        <ToolTip>Name of the module object</ToolTip>
+        <Default>module</Default>
+      </Literal>
+      <Literal>
+        <ID>name</ID>
+        <ToolTip>Name of the module</ToolTip>
+        <Default>module</Default>
+      </Literal>
+    </Declarations>
+    <Code Language="JavaScript">
+<![CDATA[var $var$ = import_("$name$");
+$end$]]>
+    </Code>
+  </Snippet>
+</CodeSnippet>

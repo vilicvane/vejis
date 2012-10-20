@@ -1,0 +1,31 @@
+﻿<CodeSnippet Format="1.1.0" xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <Header>
+    <Title>no parameter (delegate)</Title>
+    <Author>VILIC VANE</Author>
+    <Shortcut>delegate_</Shortcut>
+    <Description>Code snippet for a delegate</Description>
+    <SnippetTypes>
+      <SnippetType>Expansion</SnippetType>
+      <SnippetType>SurroundsWith</SnippetType>
+    </SnippetTypes>
+  </Header>
+  <Snippet>
+    <Declarations>
+      <Literal>
+        <ID>name</ID>
+        <ToolTip>Name of the delegate</ToolTip>
+        <Default>Delegate</Default>
+      </Literal>
+      <Literal>
+        <ID>comment</ID>
+        <ToolTip>Discription for this delegate</ToolTip>
+        <Default>Description</Default>
+      </Literal>
+    </Declarations>
+    <Code Language="JavaScript">
+<![CDATA[var $name$ = delegate_("$name$", function () {
+    //$comment$$selected$$end$
+});]]>
+    </Code>
+  </Snippet>
+</CodeSnippet>

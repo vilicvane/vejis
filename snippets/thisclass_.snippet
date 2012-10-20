@@ -1,0 +1,31 @@
+﻿<CodeSnippet Format="1.1.0" xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <Header>
+    <Title>class (begins with this)</Title>
+    <Author>VILIC VANE</Author>
+    <Shortcut>thisclass_</Shortcut>
+    <Description>Code snippet for a VEJIS class</Description>
+    <SnippetTypes>
+      <SnippetType>Expansion</SnippetType>
+      <SnippetType>SurroundsWith</SnippetType>
+    </SnippetTypes>
+  </Header>
+  <Snippet>
+    <Declarations>
+      <Literal>
+        <ID>name</ID>
+        <ToolTip>Name of the class</ToolTip>
+        <Default>Class</Default>
+      </Literal>
+    </Declarations>
+    <Code Language="JavaScript">
+<![CDATA[this.class_("$name$", function (pub, pri) {
+    this._(function () {
+        //Constructor
+        
+    });
+    
+    $end$
+});]]>
+    </Code>
+  </Snippet>
+</CodeSnippet>
