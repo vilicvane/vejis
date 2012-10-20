@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.13
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.14
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -336,7 +336,7 @@ function () {
                 /// <summary>Bind the value of this for this delegate.</summary>
                 /// <param name="object" type="Object">value of this.</param>
                 if (!is_(object, Object)) {
-                    error();
+                    error("object required.");
                     return;
                 }
                 delegate.__relatedThisObject__ = { value: object };
