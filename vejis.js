@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.13
+    VEJIS JavaScript Framework v0.5.0.14
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -17,12 +17,61 @@ function () {
     var hasOwnProperty = Object.prototype.hasOwnProperty;
     var slice = Array.prototype.slice;
 
-    /* COMMON METHODS */
-    
-    function error(description) {
-        throw new Error(description);
-    }
+    /* DEBUG STUFFS */
+    var OriginalError = global.Error;
+    OriginalError.stackTraceLimit = Infinity;
+    var stackRE;
+    var stackDetailRE;
+    var errorStackAvailability;
 
+    "Detect file name and error stack support",
+    function () {
+        var e = new OriginalError();
+        if (!e.stack) {
+            errorStackAvailability = false;
+            return;
+        }
+
+        errorStackAvailability = true;
+
+        var re = /(?: +at +(?:\S+ +)?|@)\(?([^\(\)\s]+?):\d+(?::\d+)?\)?\s*$/;
+        var stackREStr = (re.exec(e.stack) || ["", ""])[1].replace(/([^a-z0-9])/gi, "\\$1");
+
+        stackREStr = "(?: +at +(?:\\S+ +)?|@)\\(?(?!" + stackREStr + ":)([^\\(\\)\\s]+?):(\\d+)(?::(\\d+))?\\)? *(?=\r?\n|$)";
+
+        stackRE = new RegExp(stackREStr, "g");
+        stackDetailRE = new RegExp(stackREStr);
+    }();
+
+    global.Error = function (message) {
+        var e = new OriginalError(message);
+
+        if (!errorStackAvailability)
+            return e;
+
+        var details = stackDetailRE.exec(e.stack);
+        
+        var stack = e.stack.replace(/^@/mg, "    at ");
+        var lines = stack.match(stackRE);
+
+        if (!details || !lines)
+            return e;
+
+        e.message =
+        (message || "") + "\n" +
+        "    position " + details[1] + ":" + details[2] + (details[3] ? ":" + details[3] : "") + "\n" +
+        "Call stack:\n" +
+        lines.join("\n");
+
+        e.fileName = details[1];
+        e.lineNumber = Number(details[2]);
+
+        return e;
+    };
+
+    global.Error.prototype = new OriginalError();
+
+    /* COMMON METHODS */
     function log(msg) {
         if (global.console)
             console.log(msg);
@@ -104,15 +153,11 @@ function () {
     };
 
     function opt_(Type, defaultValue) {
-        if (!arguments.length) {
-            error("no argument given.");
-            return;
-        }
+        if (!arguments.length)
+            throw new Error("no argument given.");
 
-        if (!isType(Type)) {
-            error('argument "Type" given is invalid.');
-            return;
-        }
+        if (!isType(Type))
+            throw new Error('argument "Type" given is invalid.');
 
         if (arguments.length == 1) {
             switch (Type) {
@@ -138,17 +183,13 @@ function () {
                         defaultValue = [];
                     else if (Type.__nullable__)
                         defaultValue = null;
-                    else {
-                        error('argument "defaultValue" is required when the "Type" given is not String, Number, Boolean or a nullable type.');
-                        return;
-                    }
+                    else
+                        throw new Error('argument "defaultValue" is required when the "Type" given is not String, Number, Boolean or a nullable type.');
                     break;
             }
         }
-        else if (arguments.length > 1 && !is_(defaultValue, Type)) {
-            error('arguments "defaultValue" and "Type" given doesn\'t match.');
-            return;
-        }
+        else if (arguments.length > 1 && !is_(defaultValue, Type))
+            throw new Error('arguments "defaultValue" and "Type" given doesn\'t match.');
 
         return {
             __type__: ParamType.option,
@@ -159,15 +200,11 @@ function () {
     }
 
     function params_(Type) {
-        if (!arguments.length) {
-            error("no argument given.");
-            return;
-        }
+        if (!arguments.length)
+            throw new Error("no argument given.");
 
-        if (!isType(Type)) {
-            error('argument "Type" given is invalid.');
-            return;
-        }
+        if (!isType(Type))
+            throw new Error('argument "Type" given is invalid.');
 
         return {
             __type__: ParamType.params,
@@ -177,15 +214,11 @@ function () {
     }
 
     function nul_(Type) {
-        if (!arguments.length) {
-            error("no argument given.");
-            return;
-        }
+        if (!arguments.length)
+            throw new Error("no argument given.");
 
-        if (!isType(Type)) {
-            error('argument "Type" given is invalid.');
-            return;
-        }
+        if (!isType(Type))
+            throw new Error('argument "Type" given is invalid.');
 
         return {
             __type__: ParamType.normal,
@@ -218,30 +251,24 @@ function () {
                 ParamTypes.push(arguments[i]);
         }
 
-        if (arguments.length <= i) {
-            error('"fn" is missing.');
-            return;
-        }
+        if (arguments.length <= i)
+            throw new Error('"fn" is missing.');
 
         fn = arguments[i];
 
         var typeNames = [];
         for (i = 0; i < ParamTypes.length; i++) {
             var Type = ParamTypes[i];
-            if (!isTypeMark(Type) && !isType(Type)) {
-                error("invalid parameter type.");
-                return;
-            }
+            if (!isTypeMark(Type) && !isType(Type))
+                throw new Error("invalid parameter type.");
             typeNames.push(getTypeName(Type));
         }
 
         if (fn == null)
             fn = function () { };
 
-        if (typeof fn != "function") {
-            error('"fn" should be null or a function.');
-            return;
-        }
+        if (typeof fn != "function")
+            throw new Error('"fn" should be null or a function.');
 
         var names = fn.toString().match(/\((.*?)\)/)[1].match(/[^,\s]+/g) || [];
         for (i = 0; i < typeNames.length; i++)
@@ -255,30 +282,24 @@ function () {
             },
             __name__: (dName || "delegate") + "(" + typeNames.join(", ") + ")",
             with_: function (Type) {
-                if (!isType(Type)) {
-                    error('argument "Type" given is invalid.');
-                    return;
-                }
+                if (!isType(Type))
+                    throw new Error('argument "Type" given is invalid.');
                 delegate.__RelatedThisType__ = Type;
                 delete delegate.with_;
                 delete delegate.bind_;
                 return delegate;
             },
             bind_: function (object) {
-                if (!is_(object, Object)) {
-                    error();
-                    return;
-                }
+                if (!is_(object, Object))
+                    throw new Error("object required.");
                 delegate.__relatedThisObject__ = { value: object };
                 delete delegate.with_;
                 delete delegate.bind_;
                 return delegate;
             },
             as_: function (Type) {
-                if (!isType(Type)) {
-                    error('argument "Type" given is invalid.');
-                    return;
-                }
+                if (!isType(Type))
+                    throw new Error('argument "Type" given is invalid.');
                 delegate.__RelatedReturnType__ = Type;
                 delegate.__name__ = getTypeName(Type) + " " + delegate.__name__;
                 delete delegate.as_;
@@ -298,45 +319,37 @@ function () {
 
         method._ = function (params_Type, fn) {
             if (arguments.length == 0)
-                return error("at least one argument is required.");
+                throw new Error("at least one argument is required.");
 
             var Types = [];
             var typesLength = arguments.length - 1;
             for (var i = 0; i < typesLength; i++) {
                 var Type = arguments[i];
-                if (!isTypeMark(Type) && !isType(Type)) {
-                    error("invalid parameter type.");
-                    return;
-                }
+                if (!isTypeMark(Type) && !isType(Type))
+                    throw new Error("invalid parameter type.");
                 Types.push(Type);
             }
 
             fn = arguments[typesLength];
 
-            if (typeof fn != "function") {
-                error('"fn" must be a function');
-                return;
-            }
+            if (typeof fn != "function")
+                throw new Error('"fn" must be a function');
 
             var overload = new Overload(Types, fn);
 
             collection.add(overload);
 
             method.as_ = function (Type) {
-                if (!isType(Type)) {
-                    error('argument "Type" given is invalid.');
-                    return;
-                }
+                if (!isType(Type))
+                    throw new Error('argument "Type" given is invalid.');
                 overload.ReturnType = Type;
                 delete method.as_;
                 return method;
             };
 
             method.with_ = function (Type) {
-                if (!isType(Type)) {
-                    error('argument "Type" given is invalid.');
-                    return;
-                }
+                if (!isType(Type))
+                    throw new Error('argument "Type" given is invalid.');
                 overload.ThisType = Type;
                 delete method.with_;
                 delete method.bind_;
@@ -344,10 +357,8 @@ function () {
             };
 
             method.bind_ = function (object) {
-                if (!is_(object, Object)) {
-                    error();
-                    return;
-                }
+                if (!is_(object, Object))
+                    throw new Error("object required.");
                 overload.thisObject = { value: object };
                 delete method.with_;
                 delete method.bind_;
@@ -355,10 +366,8 @@ function () {
             };
 
             method.static_ = function (staticObject) {
-                if (!is_(staticObject, PlainObject)) {
-                    error('"staticObject" must be a plain object.');
-                    return;
-                }
+                if (!is_(staticObject, PlainObject))
+                    throw new Error('"staticObject" must be a plain object.');
                 overload.staticObject = staticObject;
 
                 for (var i = 0; i < params.length; i++)
@@ -449,10 +458,8 @@ function () {
                 case ParamType.option:
                     if (status < 1)
                         status = 1;
-                    if (status > 1) {
-                        error('"option" parameter position invalid.');
-                        return;
-                    }
+                    if (status > 1)
+                        throw new Error('"option" parameter position invalid.');
                     optional.push(Type);
                     break;
                 case ParamType.params:
@@ -460,14 +467,10 @@ function () {
                         status = 2;
                         ParamsRelatedType = Type.RelatedType;
                     }
-                    else if (status > 2) {
-                        error('"params" parameter position invalid.');
-                        return;
-                    }
-                    else {
-                        error('"params" parameter can only appear once in an overload.');
-                        return;
-                    }
+                    else if (status > 2)
+                        throw new Error('"params" parameter position invalid.');
+                    else
+                        throw new Error('"params" parameter can only appear once in an overload.');
                     break;
             }
         }
@@ -569,10 +572,8 @@ function () {
 
             var value = fn.apply(thisArg, destArgs);
 
-            if (this.ReturnType && !is_(value, this.ReturnType)) {
-                error("the function returned a value (" + value + ") doesn't match the type (" + getTypeName(this.ReturnType) + ") specified.");
-                return;
-            }
+            if (this.ReturnType && !is_(value, this.ReturnType))
+                throw new Error("the function returned a value (" + value + ") doesn't match the type (" + getTypeName(this.ReturnType) + ") specified.");
 
             result.match = true;
             result.value = value;
@@ -600,7 +601,7 @@ function () {
                     return result.value;
             }
 
-            error("no overload matches arguments given.");
+            throw new Error("no overload matches arguments given.");
         };
 
         this.toString = function () {
@@ -731,10 +732,8 @@ function () {
     function enum_(name, items) {
         var count = items.length;
 
-        if (count > 32) {
-            error("the length of enumeration list has exceeded the limit of 32.");
-            return;
-        }
+        if (count > 32)
+            throw new Error("the length of enumeration list has exceeded the limit of 32.");
 
         function Enum(name, value) {
             this.toString = function () { return name; };
@@ -790,10 +789,8 @@ function () {
 
             this._ = function (opt_name, params_Types, fn) {
                 if (is_(name, String)) {
-                    if (name.length == 0) {
-                        error('"name" must be a non-empty string.');
-                        return;
-                    }
+                    if (name.length == 0)
+                        throw new Error('"name" must be a non-empty string.');
                     return this[name] = (this[name] && this[name]._ || _).apply(null, slice.call(arguments, 1)).bind_(this);
                 }
 
@@ -839,10 +836,8 @@ function () {
             }
 
             if (theInterface) {
-                if (!is_(o, theInterface)) {
-                    error("some of the items defined in the interface are not implemented.");
-                    return;
-                }
+                if (!is_(o, theInterface))
+                    throw new Error("some of the items defined in the interface are not implemented.");
 
                 interfaceFormat(o, theInterface);
             }
@@ -990,10 +985,8 @@ function () {
         theInterface.__list__ = list;
         theInterface.inherit_ = function (target) {
             /// <param name="target" type="Interface">the interface to inherit.</param>
-            if (!is_(target, Interface)) {
-                error("parameter target should be Interface.");
-                return;
-            }
+            if (!is_(target, Interface))
+                throw new Error("parameter target should be Interface.");
 
             var pList = target.__list__ || [];
             for (var i = 0; i < pList.length; i++) {
@@ -1047,8 +1040,7 @@ function () {
                     handler.apply(null, modules);
                 }
                 catch (e) {
-                    error(e);
-                    return;
+                    throw new Error(e);
                 }
             }
         }
@@ -1111,19 +1103,15 @@ function () {
         };
 
         var createMethod = function (name, params_Type, fn) {
-            if (!is_(name, String) || name.length == 0) {
-                error('"name" must be a non-empty string.');
-                return;
-            }
+            if (!is_(name, String) || name.length == 0)
+                throw new Error('"name" must be a non-empty string.');
 
             return this[name] = (this[name] && this[name]._ || _).apply(null, slice.call(arguments, 1)).bind_(this);
         };
 
         var createDelegate = function (name, Types, body) {
-            if (!is_(name, String) || name.length == 0) {
-                error('"name" must be a non-empty string.');
-                return;
-            }
+            if (!is_(name, String) || name.length == 0)
+                throw new Error('"name" must be a non-empty string.');
 
             return this[name] = delegate_.apply(null, arguments);
         };
