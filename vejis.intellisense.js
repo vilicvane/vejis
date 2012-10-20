@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.11
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.12
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -104,20 +104,6 @@ function () {
         switch (typeof object) {
             case "object":
             case "function":
-                if (object) {
-                    var constructor = object.constructor;
-                    while (constructor) {
-                        if (constructor == Type || constructor.prototype instanceof Type)
-                            return true;
-                        if (
-                            constructor.__classInfo__ &&
-                            constructor.__classInfo__.inheritInfo
-                        )
-                            constructor = constructor.__classInfo__.inheritInfo.Class;
-                        else
-                            constructor = null;
-                    }
-                }
             case "undefined":
                 return object instanceof Type;
             default:
@@ -1068,19 +1054,8 @@ function () {
             while (inheritInfo = inheritInfo.inheritInfo)
                 ClassBodies.unshift(inheritInfo.ClassBody);
 
-            this._ = function () { };
-
-            for (var i = 0; i < ClassBodies.length; i++) {
-                var ins = ClassBodies[i].call(this, Class, pri);
-                if (ins) {
-                    var type = typeof ins;
-                    if (type == "function" || type == "object")
-                        copy(ins, this, true);
-                }
-            }
-
-            var constructor;
-
+            var constructor, sup;
+            
             this._ = function (Types, fn) {
                 /// <summary>Define a constructor.</summary>
                 /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
@@ -1092,9 +1067,25 @@ function () {
                     constructor._.apply(this, arguments).bind_(this);
             };
 
-            var ins = ClassBody.call(this, Class, pri);
+            for (var i = 0; i < ClassBodies.length; i++) {
+                sup = constructor;
+                constructor = null;
+                var ins = ClassBodies[i].call(this, Class, pri, sup);
+                if (ins) {
+                    var type = typeof ins;
+                    if (type == "function" || type == "object")
+                        copy(ins, this, true);
+                }
+                if (!constructor)
+                    constructor = _.call(null, function () { });
+            }
 
-            delete this._;
+            sup = constructor;
+            constructor = null;
+            var ins = ClassBody.call(this, Class, pri, sup);
+
+            if (!constructor)
+                constructor = _.call(null, function () { });
 
             if (!theConstructor) {
                 if (constructor)
@@ -1103,8 +1094,7 @@ function () {
                     theConstructor = _.call(null, ClassBody);
             }
 
-            if (!constructor)
-                constructor = _.call(null, function () { });
+            delete this._;
             //constructor.apply(this, arguments);
 
             var o = this;
@@ -1114,6 +1104,7 @@ function () {
                 if (type == "function" || type == "object") {
                     copy(this, ins, false);
                     ins.constructor = Class;
+                    ins.__relatedInstance__ = relatedInstance;
                     o = ins;
                 }
             }
@@ -1167,6 +1158,14 @@ function () {
             delete Class.inherit_;
 
             new BaseClass();
+
+            var Bridge = function () { this.constructor = Class; };
+            Bridge.prototype = BaseClass.prototype;
+            Class.prototype = new Bridge();
+
+            var Related = function () { this.constructor = Class; };
+            Related.prototype = Class.prototype;
+            relatedInstance = new Related();
 
             var inheritInfo = BaseClass.__classInfo__;
 
