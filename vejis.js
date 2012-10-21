@@ -18,14 +18,13 @@ function () {
     var slice = Array.prototype.slice;
 
     /* DEBUG STUFFS */
-    var OriginalError = global.Error;
-    OriginalError.stackTraceLimit = Infinity;
-    var stackRE;
-    var stackDetailRE;
-    var errorStackAvailability = false;
 
-    "Detect file name and error stack support",
+    "Override Error",
     function () {
+        var OriginalError = global.Error;
+        OriginalError.stackTraceLimit = Infinity;
+        var errorStackAvailability = false;
+
         var e = new OriginalError();
 
         if (!e.stack) return;
@@ -39,37 +38,37 @@ function () {
 
         stackREStr = "(?: +at +(?:\\S+ +)?|@)\\(?(?!" + stackREStr + ":)([^\\(\\)\\s]+?):(\\d+)(?::(\\d+))?\\)? *(?=\r?\n|$)";
 
-        stackRE = new RegExp(stackREStr, "g");
-        stackDetailRE = new RegExp(stackREStr);
+        var stackRE = new RegExp(stackREStr, "g");
+        var stackDetailRE = new RegExp(stackREStr);
+
+        global.Error = function (message) {
+            var e = new OriginalError(message);
+
+            if (!errorStackAvailability)
+                return e;
+
+            var details = stackDetailRE.exec(e.stack);
+
+            var stack = e.stack.replace(/^@/mg, "    at ");
+            var lines = stack.match(stackRE);
+
+            if (!details || !lines)
+                return e;
+
+            e.message =
+            (message || "") + "\n" +
+            "    position " + details[1] + ":" + details[2] + (details[3] ? ":" + details[3] : "") + "\n" +
+            "Call stack:\n" +
+            lines.join("\n");
+
+            e.fileName = details[1];
+            e.lineNumber = Number(details[2]);
+
+            return e;
+        };
+
+        global.Error.prototype = new OriginalError();
     }();
-
-    global.Error = function (message) {
-        var e = new OriginalError(message);
-
-        if (!errorStackAvailability)
-            return e;
-
-        var details = stackDetailRE.exec(e.stack);
-        
-        var stack = e.stack.replace(/^@/mg, "    at ");
-        var lines = stack.match(stackRE);
-
-        if (!details || !lines)
-            return e;
-
-        e.message =
-        (message || "") + "\n" +
-        "    position " + details[1] + ":" + details[2] + (details[3] ? ":" + details[3] : "") + "\n" +
-        "Call stack:\n" +
-        lines.join("\n");
-
-        e.fileName = details[1];
-        e.lineNumber = Number(details[2]);
-
-        return e;
-    };
-
-    global.Error.prototype = new OriginalError();
 
     /* COMMON METHODS */
     function log(msg) {
