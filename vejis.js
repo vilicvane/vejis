@@ -26,12 +26,11 @@ function () {
         var errorStackAvailability = false;
 
         var e = new OriginalError();
-
         if (!e.stack) return;
 
         var re = /(?: +at +(?:\S+ +)?|@)\(?([^\(\)\s]+?):\d+(?::\d+)?\)?\s*$/;
-        var stackREStr = (re.exec(e.stack) || ["", ""])[1].replace(/([^a-z0-9])/gi, "\\$1");
 
+        var stackREStr = (re.exec(e.stack) || ["", ""])[1].replace(/([^a-z0-9])/gi, "\\$1");
         if (!stackREStr) return;
 
         errorStackAvailability = true;
