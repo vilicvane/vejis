@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.14
+    VEJIS JavaScript Framework v0.5.0.15
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -22,20 +22,20 @@ function () {
     OriginalError.stackTraceLimit = Infinity;
     var stackRE;
     var stackDetailRE;
-    var errorStackAvailability;
+    var errorStackAvailability = false;
 
     "Detect file name and error stack support",
     function () {
         var e = new OriginalError();
-        if (!e.stack) {
-            errorStackAvailability = false;
-            return;
-        }
 
-        errorStackAvailability = true;
+        if (!e.stack) return;
 
         var re = /(?: +at +(?:\S+ +)?|@)\(?([^\(\)\s]+?):\d+(?::\d+)?\)?\s*$/;
         var stackREStr = (re.exec(e.stack) || ["", ""])[1].replace(/([^a-z0-9])/gi, "\\$1");
+
+        if (!stackREStr) return;
+
+        errorStackAvailability = true;
 
         stackREStr = "(?: +at +(?:\\S+ +)?|@)\\(?(?!" + stackREStr + ":)([^\\(\\)\\s]+?):(\\d+)(?::(\\d+))?\\)? *(?=\r?\n|$)";
 
@@ -310,32 +310,42 @@ function () {
         return delegate;
     }
 
-    function _(params_Type, fn) {
-        var collection = new OverloadCollection();
+    function _(name, Types, body) {
+        var collection; 
 
         var method = function () {
             return collection.exec(this, arguments);
         };
 
-        method._ = function (params_Type, fn) {
-            if (arguments.length == 0)
-                throw new Error("at least one argument is required.");
+        var args;
 
-            var Types = [];
+        if (is_(name, String)) {
+            args = slice.call(arguments, 1);
+            method.__name__ = name;
+        }
+        else args = arguments;
+
+        collection = new OverloadCollection(method);
+
+        method._ = function (Types, body) {
+            if (arguments.length == 0)
+                throw new Error("body is required.");
+
+            var ParamTypes = [];
             var typesLength = arguments.length - 1;
             for (var i = 0; i < typesLength; i++) {
                 var Type = arguments[i];
                 if (!isTypeMark(Type) && !isType(Type))
                     throw new Error("invalid parameter type.");
-                Types.push(Type);
+                ParamTypes.push(Type);
             }
 
-            fn = arguments[typesLength];
+            var fn = arguments[typesLength];
 
             if (typeof fn != "function")
-                throw new Error('"fn" must be a function');
+                throw new Error('"body" must be a function');
 
-            var overload = new Overload(Types, fn);
+            var overload = new Overload(ParamTypes, fn);
 
             collection.add(overload);
 
@@ -384,8 +394,8 @@ function () {
             return collection.toString();
         };
 
-        if (arguments.length)
-            method._.apply(method, arguments);
+        if (arguments.length > 1)
+            method._.apply(method, args);
 
         return method;
     }
@@ -586,7 +596,7 @@ function () {
         };
     }
 
-    function OverloadCollection() {
+    function OverloadCollection(method) {
         var list = [];
 
         this.add = function (overload) {
@@ -601,7 +611,7 @@ function () {
                     return result.value;
             }
 
-            throw new Error("no overload matches arguments given.");
+            throw new Error("no overload " + (method.__name__ ? 'of method "' + method.__name__ + '" ' : "") + "matches arguments given.");
         };
 
         this.toString = function () {
@@ -787,11 +797,18 @@ function () {
 
             var constructor, sup;
 
-            this._ = function (opt_name, params_Types, fn) {
+            this._ = function (name, Types, fn) {
                 if (is_(name, String)) {
                     if (name.length == 0)
                         throw new Error('"name" must be a non-empty string.');
-                    return this[name] = (this[name] && this[name]._ || _).apply(null, slice.call(arguments, 1)).bind_(this);
+
+                    var method;
+                    if ((method = this[name]) && method._)
+                        method._.apply(null, slice.call(arguments, 1)).bind_(this);
+                    else
+                        method = this[name] = _.apply(null, arguments).bind_(this);
+
+                    return method;
                 }
 
                 if (!constructor)
@@ -1040,7 +1057,11 @@ function () {
                     handler.apply(null, modules);
                 }
                 catch (e) {
-                    throw new Error(e);
+                    var str = handler.toString();
+                    var start = "in use_ handler, ";
+                    if (e.message.indexOf(start) != 0)
+                        e.message = "in use_ handler, " + e.message + "\n" + str.substr(0, 100) + (str.length > 100 ? "..." : "");
+                    throw e;
                 }
             }
         }
@@ -1102,11 +1123,17 @@ function () {
                 return undefined;
         };
 
-        var createMethod = function (name, params_Type, fn) {
+        var createMethod = function (name, Types, fn) {
             if (!is_(name, String) || name.length == 0)
                 throw new Error('"name" must be a non-empty string.');
 
-            return this[name] = (this[name] && this[name]._ || _).apply(null, slice.call(arguments, 1)).bind_(this);
+            var method;
+            if ((method = this[name]) && method._)
+                method._.apply(null, slice.call(arguments, 1)).bind_(this);
+            else
+                method = this[name] = _.apply(null, arguments).bind_(this);
+
+            return method;
         };
 
         var createDelegate = function (name, Types, body) {
