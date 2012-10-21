@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.15
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.16
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -454,7 +454,7 @@ function () {
             return collection.toString();
         };
 
-        if (arguments.length > 1)
+        if (args.length > 0)
             method._.apply(method, args);
 
         return method;
@@ -970,6 +970,23 @@ function () {
 
     /* VEJIS CLASS ENHANCING */
 
+    var createMethod = function (name, Types, fn) {
+        /// <summary>Create a VEJIS method.</summary>
+        /// <param name="name" type="String">name of the method.</param>
+        /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
+        /// <param name="fn" type="Function">the related function.</param>
+
+        if (!is_(name, String) || name.length == 0)
+            throw new Error('"name" must be a non-empty string.');
+        var method;
+        if ((method = this[name]) && method._)
+            method._.apply(null, slice.call(arguments, 1)).bind_(this);
+        else
+            method = this[name] = _.apply(null, arguments).bind_(this);
+
+        return method;
+    };
+
     function class_(name, ClassBody) {
         //Create a class.
         //name: name of the class.
@@ -1030,9 +1047,9 @@ function () {
                 }
 
                 if (!constructor)
-                    constructor = _.apply(this, arguments).bind_(this);
+                    constructor = _.apply(null, arguments).bind_(this);
                 else
-                    constructor._.apply(this, arguments).bind_(this);
+                    constructor._.apply(null, arguments).bind_(this);
             };
 
             for (var i = 0; i < ClassBodies.length; i++) {
@@ -1094,6 +1111,26 @@ function () {
             new Class();
             return theConstructor.__overloads__;
         };
+
+        Class.prototype_ = _(PlainObject, function (object) {
+            //Add methods or properties of an object to the prototype.
+            //object: object of which the methods and properties will be copied.
+
+            copy(object, Class.prototype, true);
+
+            return Class;
+        });
+
+        Class.prototype_._(Function, function (builder) {
+            //Add methods or properties to the prototype by the builder.
+            //builder: a function, you can assuming that this function will be called this way: builder.call(Class.prototype).
+
+            Class.prototype._ = createMethod;
+            builder.call(Class.prototype);
+            delete Class.prototype._;
+
+            return Class;
+        });
 
         Class.static_ = _(PlainObject, function (body) {
             //Define a private static object.
@@ -1417,22 +1454,7 @@ function () {
                 return undefined;
         };
 
-        var createMethod = function (name, Types, fn) {
-            /// <summary>Create a VEJIS method.</summary>
-            /// <param name="name" type="String">name of the method.</param>
-            /// <param name="Types" type="Type..." optional="true" >parameter types.</param>
-            /// <param name="fn" type="Function">the related function.</param>
-
-            if (!is_(name, String) || name.length == 0) 
-                throw new Error('"name" must be a non-empty string.');
-            var method;
-            if ((method = this[name]) && method._)
-                method._.apply(null, slice.call(arguments, 1)).bind_(this);
-            else
-                method = this[name] = _.apply(null, arguments).bind_(this);
-
-            return method;
-        };
+        //createMethod is placed before class.
 
         var createDelegate = function (name, Types, body) {
             /// <summary>Create a delegate.</summary>

@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.15
+    VEJIS JavaScript Framework v0.5.0.16
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -394,7 +394,7 @@ function () {
             return collection.toString();
         };
 
-        if (arguments.length > 1)
+        if (args.length > 0)
             method._.apply(method, args);
 
         return method;
@@ -773,6 +773,19 @@ function () {
 
     /* VEJIS CLASS ENHANCING */
 
+    var createMethod = function (name, Types, fn) {
+        if (!is_(name, String) || name.length == 0)
+            throw new Error('"name" must be a non-empty string.');
+
+        var method;
+        if ((method = this[name]) && method._)
+            method._.apply(null, slice.call(arguments, 1)).bind_(this);
+        else
+            method = this[name] = _.apply(null, arguments).bind_(this);
+
+        return method;
+    };
+
     function class_(name, ClassBody) {
         var pri = {};
 
@@ -812,9 +825,9 @@ function () {
                 }
 
                 if (!constructor)
-                    constructor = _.apply(this, arguments).bind_(this);
+                    constructor = _.apply(null, arguments).bind_(this);
                 else
-                    constructor._.apply(this, arguments).bind_(this);
+                    constructor._.apply(null, arguments).bind_(this);
             };
 
             for (var i = 0; i < ClassBodies.length; i++) {
@@ -864,6 +877,20 @@ function () {
 
         Class.__name__ = name;
         Class.__classInfo__ = info;
+
+        Class.prototype_ = _(PlainObject, function (object) {
+            copy(object, Class.prototype, true);
+
+            return Class;
+        });
+
+        Class.prototype_._(Function, function (builder) {
+            Class.prototype._ = createMethod;
+            builder.call(Class.prototype);
+            delete Class.prototype._;
+
+            return Class;
+        });
 
         Class.static_ = _(PlainObject, function (body) {
             delete Class.static_;
@@ -1121,19 +1148,6 @@ function () {
                 return info.module;
             else
                 return undefined;
-        };
-
-        var createMethod = function (name, Types, fn) {
-            if (!is_(name, String) || name.length == 0)
-                throw new Error('"name" must be a non-empty string.');
-
-            var method;
-            if ((method = this[name]) && method._)
-                method._.apply(null, slice.call(arguments, 1)).bind_(this);
-            else
-                method = this[name] = _.apply(null, arguments).bind_(this);
-
-            return method;
         };
 
         var createDelegate = function (name, Types, body) {
