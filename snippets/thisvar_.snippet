@@ -1,0 +1,30 @@
+﻿<CodeSnippet Format="1.1.0" xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <Header>
+    <Title>var (begins with this)</Title>
+    <Author>VILIC VANE</Author>
+    <Shortcut>thisvar_</Shortcut>
+    <Description>Code snippet for defining properties of a class</Description>
+    <SnippetTypes>
+      <SnippetType>Expansion</SnippetType>
+      <SnippetType>SurroundsWith</SnippetType>
+    </SnippetTypes>
+  </Header>
+  <Snippet>
+    <Declarations>
+      <Literal>
+        <ID>names</ID>
+        <ToolTip>Names of the properties</ToolTip>
+        <Default>"name"</Default>
+      </Literal>
+      <Literal>
+        <ID>type</ID>
+        <ToolTip>Type of the properties</ToolTip>
+        <Default>Object</Default>
+      </Literal>
+    </Declarations>
+    <Code Language="JavaScript">
+<![CDATA[this.var_($names$, $type$);
+$end$]]>
+    </Code>
+  </Snippet>
+</CodeSnippet>
