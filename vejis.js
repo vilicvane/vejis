@@ -808,6 +808,11 @@ function () {
 
             var constructor, sup;
 
+            this.var_ = _(params_(String), Type, function (names, Type) {
+                for (var i = 0; i < names.length; i++)
+                    this[names[i]] = undefined;
+            });
+
             this._ = function (name, Types, fn) {
                 if (is_(name, String)) {
                     if (name.length == 0)
@@ -848,6 +853,7 @@ function () {
             if (!constructor)
                 constructor = _.call(null, function () { });
 
+            delete this.var_;
             delete this._;
             constructor.apply(this, arguments);
 
@@ -1168,10 +1174,9 @@ function () {
         });
 
         function getInfo(name) {
-            var baseName = name.match(/^[^\/]+/)[0];
-
             var info = infos(name);
 
+            var baseName = name.match(/^[^\/]+/)[0];
             var isRoot = baseName == name;
 
             if (!info) {

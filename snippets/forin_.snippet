@@ -21,9 +21,14 @@
         <ToolTip>Value</ToolTip>
         <Default>value</Default>
       </Literal>
+      <Literal>
+        <ID>name</ID>
+        <ToolTip>Name</ToolTip>
+        <Default>name</Default>
+      </Literal>
     </Declarations>
     <Code Language="JavaScript">
-<![CDATA[forin_($object$, function ($value$) {
+<![CDATA[forin_($object$, function ($value$, $name$) {
     $selected$$end$
 });]]>
     </Code>

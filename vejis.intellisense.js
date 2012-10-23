@@ -133,9 +133,11 @@ function () {
 
     function opt_(Type, defaultValue) {
         if (!arguments.length) 
-            throw new Error("no argument given.");
+            throw new Error("no argument given.");
+
         if (!isType(Type)) 
-            throw new Error('argument "Type" given is invalid.');
+            throw new Error('argument "Type" given is invalid.');
+
         if (arguments.length == 1) {
             switch (Type) {
                 case Number:
@@ -183,9 +185,11 @@ function () {
 
     function params_(Type) {
         if (!arguments.length) 
-            throw new Error("no argument given.");
+            throw new Error("no argument given.");
+
         if (!isType(Type)) 
-            throw new Error('argument "Type" given is invalid.');
+            throw new Error('argument "Type" given is invalid.');
+
         return {
             __type__: ParamType.params,
             RelatedType: Type,
@@ -198,9 +202,11 @@ function () {
 
     function nul_(Type) {
         if (!arguments.length) 
-            throw new Error("no argument given.");
+            throw new Error("no argument given.");
+
         if (!isType(Type)) 
-            throw new Error('argument "Type" given is invalid.');
+            throw new Error('argument "Type" given is invalid.');
+
         var name = getTypeName(Type) + "?";
 
         var type = {
@@ -255,7 +261,8 @@ function () {
         }
 
         if (arguments.length <= i) 
-            throw new Error('"fn" is missing.');
+            throw new Error('"fn" is missing.');
+
         fn = arguments[i];
 
         var typeNames = [];
@@ -270,7 +277,8 @@ function () {
             fn = function () { };
 
         if (typeof fn != "function") 
-            throw new Error('"fn" should be null or a function.');
+            throw new Error('"fn" should be null or a function.');
+
         var names = fn.toString().match(/\((.*?)\)/)[1].match(/[^,\s]+/g) || [];
         for (i = 0; i < typeNames.length; i++)
             typeNames[i] += " " + (names[i] || "p" + (i + 1));
@@ -362,12 +370,15 @@ function () {
             for (var i = 0; i < typesLength; i++) {
                 var Type = arguments[i];
                 if (!isTypeMark(Type) && !isType(Type)) 
-                    throw new Error("invalid parameter type.");                ParamTypes.push(Type);            }
+                    throw new Error("invalid parameter type.");
+                ParamTypes.push(Type);
+            }
 
             var fn = arguments[typesLength];
 
             if (typeof fn != "function") 
-                throw new Error("body must be a function");
+                throw new Error("body must be a function");
+
             intellisense.redirectDefinition(method, fn);
 
             var params =
@@ -935,7 +946,8 @@ function () {
         var count = eles.length;
 
         if (count > 32) 
-            throw new Error("the length of enumeration list has exceeded the limit of 32.");
+            throw new Error("the length of enumeration list has exceeded the limit of 32.");
+
         function Enum(name, value) {
             this.toString = function () { return name; };
             this.valueOf = function () { return value; };
@@ -977,7 +989,8 @@ function () {
         /// <param name="fn" type="Function">the related function.</param>
 
         if (!is_(name, String) || name.length == 0)
-            throw new Error('"name" must be a non-empty string.');
+            throw new Error('"name" must be a non-empty string.');
+
         var method;
         if ((method = this[name]) && method._)
             method._.apply(null, slice.call(arguments, 1)).bind_(this);
@@ -1020,6 +1033,14 @@ function () {
                 ClassBodies.unshift(inheritInfo.ClassBody);
 
             var constructor, sup;
+
+            this.var_ = _(params_(String), Type, function (names, Type) {
+                //Define properties.
+                //names: names of the properties.
+                //Type: Type of the properties.
+                for (var i = 0; i < names.length; i++)
+                    this[names[i]] = getInstance(Type);
+            });
             
             this._ = function (name, Types, fn) {
                 /// <signature>
@@ -1036,7 +1057,8 @@ function () {
 
                 if (is_(name, String)) {
                     if (name.length == 0) 
-                        throw new Error('"name" must be a non-empty string.');
+                        throw new Error('"name" must be a non-empty string.');
+
                     var method;
                     if ((method = this[name]) && method._)
                         method._.apply(null, slice.call(arguments, 1)).bind_(this);
@@ -1079,6 +1101,7 @@ function () {
                     theConstructor = _.call(null, ClassBody);
             }
 
+            delete this.var_;
             delete this._;
             //constructor.apply(this, arguments);
 
@@ -1314,7 +1337,8 @@ function () {
         theInterface.inherit_ = function (target) {
             /// <param name="target" type="Interface">the interface to inherit.</param>
             if (!is_(target, Interface)) 
-                throw new Error("parameter target should be Interface.");
+                throw new Error("parameter target should be Interface.");
+
             var pList = target.__list__ || [];
             for (var i = 0; i < pList.length; i++) {
                 var item = pList[i];
@@ -1399,7 +1423,9 @@ function () {
 
             var module = info.module;
 
-            //the order of the code below is reversed comparing with vejis.js
+            //the order of the code below is not in the same order as vejis.js,
+            //considering that developer might created duplicate modules,
+            //but intellisense at least should work all the time.
             //start
             if (builder)
                 builder.call(module);
@@ -1463,7 +1489,8 @@ function () {
             /// <param name="body" type="Function?">a template function.</param>
 
             if (!is_(name, String) || name.length == 0) 
-                throw new Error('"name" must be a non-empty string.');
+                throw new Error('"name" must be a non-empty string.');
+
             return this[name] = delegate_.apply(null, arguments);
         };
 
@@ -1492,10 +1519,9 @@ function () {
         });
 
         function getInfo(name) {
-            var baseName = name.match(/^[^\/]+/)[0];
-
             var info = infos(name);
 
+            var baseName = name.match(/^[^\/]+/)[0];
             var isRoot = baseName == name;
 
             if (!info) {
