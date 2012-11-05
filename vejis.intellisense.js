@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.17
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.18
     http://vejis.org
 
     This version is still preliminary and subject to change.
