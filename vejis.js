@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.18
+    VEJIS JavaScript Framework v0.5.0.20
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -23,7 +23,6 @@ function () {
     function () {
         var OriginalError = global.Error;
         OriginalError.stackTraceLimit = Infinity;
-        var errorStackAvailability = false;
 
         var e = new OriginalError();
         if (!e.stack) return;
@@ -33,19 +32,13 @@ function () {
         var stackREStr = (re.exec(e.stack) || ["", ""])[1].replace(/([^a-z0-9])/gi, "\\$1");
         if (!stackREStr) return;
 
-        errorStackAvailability = true;
-
         stackREStr = "(?: +at +(?:\\S+ +)?|@)\\(?(?!" + stackREStr + ":)([^\\(\\)\\s]+?):(\\d+)(?::(\\d+))?\\)? *(?=\r?\n|$)";
 
         var stackRE = new RegExp(stackREStr, "g");
         var stackDetailRE = new RegExp(stackREStr);
 
         global.Error = function (message) {
-            var e = new OriginalError(message);
-
-            if (!errorStackAvailability)
-                return e;
-
+            var e = new OriginalError();
             var details = stackDetailRE.exec(e.stack);
 
             var stack = e.stack.replace(/^@/mg, "    at ");
@@ -72,12 +65,12 @@ function () {
     /* COMMON METHODS */
     function log(msg) {
         if (global.console)
-            console.log(msg);
+            console.log(new Error(msg).message);
     }
 
     function warn(msg) {
         if (global.console)
-            console.warn(msg);
+            console.warn(new Error(msg).message);
     }
 
     function copy(from, to, overwrite) {
@@ -138,6 +131,17 @@ function () {
         return (
             typeof TypeMark == "object" &&
             !!TypeMark && typeof TypeMark.__type__ == "number"
+        );
+    }
+
+    function isTypeEqual(TypeA, TypeB) {
+        return (
+            TypeA == TypeB ||
+            TypeA.__type__ == ParamType.delegate && (TypeB.__type__ == ParamType.delegate || TypeB == Function) ||
+            TypeA == Function && TypeB.__type__ == ParamType.delegate ||
+            isTypeMark(TypeA) && isTypeMark(TypeB) &&
+            TypeA.__type__ == TypeB.__type__ &&
+            TypeA.RelatedType == TypeB.RelatedType
         );
     }
 
@@ -598,6 +602,29 @@ function () {
         var list = [];
 
         this.add = function (overload) {
+            main:
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i];
+
+                if (item.ThisType != overload.ThisType)
+                    continue;
+
+                var TypesA = item.Types;
+                var TypesB = overload.Types;
+
+                if (TypesA.length != TypesB.length)
+                    continue;
+
+                for (var j = 0; j < TypesB.length; j++) {
+                    if (!isTypeEqual(TypesA[j], TypesB[j]))
+                        continue main;
+                }
+
+                list[i] = overload;
+                warn("An overload is overriden.");
+                return;
+            }
+
             list.push(overload);
         };
 

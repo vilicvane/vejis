@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.18
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.20
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -119,6 +119,17 @@ function () {
         return (
             typeof TypeMark == "object" &&
             !!TypeMark && typeof TypeMark.__type__ == "number"
+        );
+    }
+
+    function isTypeEqual(TypeA, TypeB) {
+        return (
+            TypeA == TypeB ||
+            TypeA.__type__ == ParamType.delegate && (TypeB.__type__ == ParamType.delegate || TypeB == Function) ||
+            TypeA == Function && TypeB.__type__ == ParamType.delegate ||
+            isTypeMark(TypeA) && isTypeMark(TypeB) &&
+            TypeA.__type__ == TypeB.__type__ &&
+            TypeA.RelatedType == TypeB.RelatedType
         );
     }
 
@@ -379,6 +390,9 @@ function () {
             if (typeof fn != "function") 
                 throw new Error("body must be a function");
 
+            var overload = new Overload(ParamTypes, fn);
+            var index = collection.add(overload);
+
             intellisense.redirectDefinition(method, fn);
 
             var params =
@@ -405,11 +419,8 @@ function () {
 
                 params.push(param);
             }
-            overloads.push(fn);
-        
-            var overload = new Overload(ParamTypes, fn);
 
-            collection.add(overload);
+            overloads[index] = fn;
 
             method.as_ = function (Type) {
                 /// <summary>Set the type of return value for this overload.</summary>
@@ -699,7 +710,32 @@ function () {
         var list = [];
 
         this.add = function (overload) {
+            var i;
+            main:
+            for (i = 0; i < list.length; i++) {
+                var item = list[i];
+
+                if (item.ThisType != overload.ThisType)
+                    continue;
+
+                var TypesA = item.Types;
+                var TypesB = overload.Types;
+
+                if (TypesA.length != TypesB.length)
+                    continue;
+
+                for (var j = 0; j < TypesB.length; j++) {
+                    if (!isTypeEqual(TypesA[j], TypesB[j]))
+                        continue main;
+                }
+
+                list[i] = overload;
+                warn("An overload is overriden.");
+                return i;
+            }
+
             list.push(overload);
+            return i;
         };
 
         this.exec = function (thisArg, args) {
