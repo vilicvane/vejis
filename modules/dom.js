@@ -258,7 +258,7 @@ module_("dom", function () {
         //ele: the target element.
         //className: the class name to be removed.
 
-        var newCN = ele.className.replace(new RegExp('\\s*' + className + '\\s*', 'g'), ' ');
+        var newCN = ele.className.replace(new RegExp('^(?:(.*)\\s)?' + className + '(\\s.*)?$'), '$1$2');
         if (ele.className != newCN) {
             ele.className = trim(newCN);
             return true;
