@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.20
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.21
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -908,10 +908,11 @@ function () {
 
     /* OTHER EXTENDED METHODS */
 
-    global.for_ = _(IList, delegate_(Object, Integer, Integer, function (value, i, length) { }), function for_(array, handler) {
+    global.for_ = _(nul_(IList), delegate_(Object, Integer, Integer, function (value, i, length) { }), function for_(array, handler) {
         //Traverse an array, returns true if the traversal is completed.
         //array: the array to be traversed.
         //handler: the handler, return false to break traversal; and return a number to specify the increasement of i.
+        if (!array) return true;
         for (var i = 0; i < array.length;) {
             var result = handler(array[i], i, array.length);
             if (result === false)
@@ -963,10 +964,11 @@ function () {
         return true;
     }).as_(Boolean);
 
-    global.forin_ = _(Object, delegate_(Object, String, function (value, name) { }), function (object, handler) {
+    global.forin_ = _(nul_(Object), delegate_(Object, String, function (value, name) { }), function (object, handler) {
         //Traverse the properties of an object, returns true if the traversal is completed.
         //object: the target object.
         //handler: the handler, return false to break traversal.
+        if (!object) return true;
         for (var i in object)
             if (hasOwnProperty.call(object, i))
                 if (handler(object[i], i) === false)
@@ -1649,7 +1651,7 @@ function () {
                 srcs.push(src);
             }
 
-            for (var i = 0; i < 5; i++) {
+            for (var j = 0; j < 5; j++) {
                 src = "../" + src;
                 srcs.push(src);
             }
