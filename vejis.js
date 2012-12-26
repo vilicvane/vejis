@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework v0.5.0.20
+    VEJIS JavaScript Framework v0.5.0.21
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -10,6 +10,8 @@
 
 "VEJIS",
 function () {
+    if (typeof intellisense != "undefined" && typeof _ != "undefined")
+        return;
 
     /* COMMON VARIABLES */
 
@@ -708,7 +710,8 @@ function () {
 
     /* OTHER EXTENDED METHODS */
 
-    global.for_ = _(IList, delegate_(Object, Integer, Integer, null), function for_(array, handler) {
+    global.for_ = _(nul_(IList), delegate_(Object, Integer, Integer, null), function for_(array, handler) {
+        if (!array) return true;
         for (var i = 0; i < array.length;) {
             var result = handler(array[i], i, array.length);
             if (result === false)
@@ -756,7 +759,8 @@ function () {
         return true;
     }).as_(Boolean);
 
-    global.forin_ = _(Object, delegate_(Object, String, null), function (object, handler) {
+    global.forin_ = _(nul_(Object), delegate_(Object, String, null), function (object, handler) {
+        if (!object) return true;
         for (var i in object)
             if (hasOwnProperty.call(object, i))
                 if (handler(object[i], i) === false)

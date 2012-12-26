@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS DOM Module v0.1.0.2
+    VEJIS DOM Module v0.1.0.3
     Just another module based on VEJIS 0.5.
     http://vejis.org/modules/dom
 
@@ -164,15 +164,15 @@ module_("dom", function () {
             }
         ];
 
-        var fn = _(String, opt_(Object, document), function (selector, rel) {
+        var fn = _(String, IList, query);
+
+        fn._(String, opt_(Object, document), function (selector, rel) {
             //It returns an element or an array (determined by the selector) of elements by CSS selector given.
             //selector: the CSS selector, supports only "#", ".", ">".
             //rel: the relative element for query.
 
             return query(selector, [rel]);
         });
-
-        fn._(String, IList, query);
 
         return fn;
 
@@ -359,15 +359,20 @@ module_("dom", function () {
     /* style */
 
     this.setStyle = _(params_(Object), PlainObject, function (eles, styles) {
-        //Set style of one or more elements.
+        //Set style of one or more elements. If there isn't such a style, it would fallback to their property.
         //eles: the target elements.
         //styles: style in object notation.
 
         for_(eles, function (ele) {
             forin_(styles, function (value, style) {
-                ele.style[style] = value.toString();
-                if (style == "opacity" && "filter" in ele.style)
-                    ele.style.filter = "alpha(opacity=" + Math.round(value * 100) + ")";
+                if (style in ele.style) {
+                    ele.style[style] = value.toString();
+                    if (style == "opacity" && "filter" in ele.style)
+                        ele.style.filter = "alpha(opacity=" + Math.round(value * 100) + ")";
+                }
+                else {
+                    ele[style] = value.toString();
+                }
             });
         });
     });

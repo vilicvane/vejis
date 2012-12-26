@@ -1,4 +1,5 @@
-﻿/*
+﻿/// <reference path="dom.js" />
+/*
     VEJIS DOM Animation Module v0.1.0.1
     Just another module based on VEJIS 0.5.
     http://vejis.org/modules/dom
@@ -91,7 +92,15 @@ use_("dom", function (dom) {
                 trans = transition || defaultTransition;
 
                 var now = 0;
-                nextStyle();
+
+                if (dur > 0)
+                    nextStyle();
+                else {
+                    for_(styles, function (style) {
+                        dom.setStyle(ele, style);
+                    });
+                    if (callback) callback();
+                }
 
                 function nextStyle() {
                     var style = styles[now++];
@@ -138,8 +147,10 @@ use_("dom", function (dom) {
                 var re = /^(?:#((?:[\da-f]{3}){1,2})|(-?[\d\.]+)(.*))$/i;
                 var groups = re.exec(init);
 
-                if (!groups)
-                    return error("unrecognized value");
+                if (!groups) {
+                    throw new Error("unrecognized value");
+                    return;
+                }
 
                 if (groups[1]) {
                     isRGB = true;

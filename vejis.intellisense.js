@@ -1,5 +1,5 @@
 ﻿/*
-    VEJIS JavaScript Framework - Intellisense File v0.5.0.21
+    VEJIS JavaScript Framework - Intellisense File v0.5.0.22
     http://vejis.org
 
     This version is still preliminary and subject to change.
@@ -1404,13 +1404,11 @@ function () {
             ins = Type.__getDemoInstance__();
         else {
             try {
-                ins = new Type();
-            } catch (e) {
-                ins = Type.prototype;
-            }
+                ins = new Type() || Type.prototype;
+            } catch (e) { }
         }
 
-        return ins;
+        return "_$isExceptionObject" in ins ? Type.prototype : ins;
     }
 
     /* VEJIS MODULE SYSTEM */
