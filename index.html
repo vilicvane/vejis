@@ -1,0 +1,677 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>VEJIS - Typed JavaScript Programming</title>
+    <link href="main.css" rel="stylesheet" />
+    <script src="script/vejis.js"></script>
+    <script>
+        require_("script/", ["dom.js", "vlight.js"]);
+    </script>
+	<script type="text/javascript">
+	    var _gaq = _gaq || [];
+	    _gaq.push(['_setAccount', 'UA-25148472-1']);
+	    _gaq.push(['_setDomainName', 'vejis.org']);
+	    _gaq.push(['_setAllowHash', 'false']);
+	    _gaq.push(['_trackPageview']);
+
+	    (function () {
+	        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	    })();
+	</script>
+</head>
+<body>
+    <div id="left-wrapper">
+        <div id="logo-wrapper">
+            <h1 class="vejis"><a href="#top">VEJIS</a></h1>
+            <span class="version">0.5</span>
+            <span class="description">It's JavaScript!</span>
+        </div>
+        <div id="catalog-wrapper">
+            <h2><a href="#getting-started">Getting Started</a></h2>
+            <ul>
+                <li><a href="#what-is-vejis">what is vejis</a></li>
+                <li><a href="#vejis-and-vs-2012">vejis & vs 2012</a></li>
+                <li><a href="#downloads">downloads</a></li>
+            </ul>
+            <h2><a href="#how-vejis-works">How VEJIS Works</a></h2>
+            <ul>
+                <li><a href="#methods">methods</a></li>
+                <li><a href="#classes-and-related">classes & related</a></li>
+                <li><a href="#modules-and-related">modules & related</a></li>
+                <li><a href="#extended-types">extended types</a></li>
+                <li><a href="#others">others</a></li>
+            </ul>
+            <h2>Related Links</h2>
+            <ul>
+                <li><a target="_blank" href="https://github.com/vilic/vejis">github repository</a></li>
+                <li><a target="_blank" href="http://vilic.info/blog/about">about the author</a></li>
+            </ul>
+        </div>
+    </div>
+    <div id="right-wrapper">
+        <div id="content-wrapper">
+            <div id="top"></div>
+            <h2 id="getting-started">
+                <span>Getting Started</span>
+                <b></b>
+            </h2>
+            <p>You will be able to learn the basic knowledge of VEJIS in this section.</p>
+            <h3 id="what-is-vejis">What is VEJIS</h3>
+            <p>VEJIS['vedʒi:s] is a grammar level runtime framework for JavaScript. It provides a typed programming experience with powerful method overloading, enhanced classes and a simple but useful module loader.</p>
+            <p>If you work with Visual Studio 2012, just add the intellisense file of VEJIS as reference, you will find out what an amazing experience will VEJIS bring to you. Also, if you want to use a module that is developed using VEJIS, you don't even need to look up the documentation. VEJIS intellisense file will tell you almost all the information about the methods, classes and etc.</p>
+            <h3 id="vejis-and-vs-2012">VEJIS and Visual Studio 2012</h3>
+            <p>There are accurate tips almost every where if you are using Visual Studio 2012 and added VEJIS intellisense file as reference.</p>
+            <p>You may find them out from this video.</p>
+            <iframe width="640" height="480" src="http://www.youtube.com/embed/ADUD1HaErxc" frameborder="0" allowfullscreen></iframe>
+            <p>Aternative <a href="http://v.youku.com/v_show/id_XNDY0MDE3MjMy.html">http://v.youku.com/v_show/id_XNDY0MDE3MjMy.html</a></p>
+            <h3 id="downloads">Downloads</h3>
+            <p>VEJIS has three planed version to download, the intellisense file is for Visual Studio 2012 and will bring you a brand new typed programming experience of JavaScript. The development version contains some debug information and is used for browser debugging. And the product version contains only necessary stuffs and will bring a better performance.</p>
+            <ul>
+                <li>Intellisense file for VS 2012 - <a href="https://github.com/vilic/vejis/raw/master/vejis.intellisense.js" target="_blank">Download</a></li>
+                <li>Development version - <a href="https://github.com/vilic/vejis/raw/master/vejis.js" target="_blank">Download</a></li>
+                <li>Product version - Not available yet</li>
+                <li><a href="https://github.com/vilic/vejis" target="_blank">Find more on Github</a></li>
+            </ul>
+            <h2 id="how-vejis-works">
+                <span>How VEJIS Works</span>
+                <b></b>
+            </h2>
+            <p>In this section, you will be able to learn how to write JavaScript using VEJIS. Here is the notation that will be used for describing functions provided by VEJIS later.</p>
+            <p><b>ReturnType functionName(TypeA paramA, TypeB paramB)</b></p>
+            <p>Detailed rules:</p>
+            <ul>
+                <li>If a parameter is optional, it will be written as "[Type param]".</li>
+                <li>If there are variable-length parameters, it will be written as "[Type... params]".</li>
+                <li>If a parameter is nullable, it will be written as "Type? param".</li>
+            </ul>
+            <!-- Methods -->
+            <h3 id="methods">Methods</h3>
+            <p>Method overloading is one of the most important features of VEJIS, even though it had ever been removed in version 0.3 considering performance issues. But then I realized, even though this feature did have performance issues, if we use it properly, the negative influence can just be ignored.</p>
+            <ul class="api-list">
+                <li><a href="#_">_([Type... Types], Function fn)</a></li>
+                <li><a href="#opt_">opt_(Type Type, [Object? defaultValue])</a></li>
+                <li><a href="#params_">params_(Type Type)</a></li>
+            </ul>
+            <h4 id="_">_([Type... Types], Function fn)</h4>
+            <p>VEJIS provides a powerful method overloading feature, you can define the types of parameters as well as “this” pointer and return value. The value of type can be either of the classic constructor, a VEJIS class/interface or a VEJIS type mark.</p>
+            <p>Here are some examples that can help you understand how to use this feature.</p>
+            <pre class="vlight">
+//Create a VEJIS method.
+var test = _(String, function (str) {
+    return str.length;
+});
+
+//Add an overload with a certain return type.
+test._(Number, Number, function (a, b) {
+    //Return the addition of two numbers.
+    //If you are using VS 2012 as IDE, and added reference of VEJIS intellisense file,
+    //you will be able to see the description for each overload and parameters like below.
+    //a: the first number.
+    //b: the second number.
+    return a + b;
+}).as_(Number);
+
+//Add an overload with a certain "this" pointer type.
+test._(Number, function (num) {
+    return this.length % num;
+}).with_(String);
+//And of course you can use as_ and with_ the same time.
+
+//Add an overload with a certain "this" pointer value.
+test._(function () {
+    return this.x + this.y;
+}).bind_({
+    x: 123,
+    y: 321
+});
+//bind_ and with_ can't be used at the same time on a single overload.
+
+//And you can call these overloads like below.
+test("tell me my length!"); //returns 18
+test(123, 456); //returns 579
+test.call("abcdefg", 2); //returns 1
+test(); //returns 444
+            </pre>
+            <p>Meanwhile, VEJIS provides opt_ and params_ to enhance the overloading experience.</p>
+            <h4 id="opt_">opt_(Type Type, [Object? defaultValue])</h4>
+            <p>You can write optional parameters at the beginning, middle and end, but you must write them together with no other types between them.</p>
+            <p>And when there are more than one optional parameters in an overload, you can’t skip one optional parameter and try to pass a value to the latter one.</p>
+            <p>The default value of opt_ is optional only when the type is Number, Integer, String, Boolean, Object, PlainObject, Array and List(...), whose default values are 0, 0, “”, false, {}, {}, [] and [], or when the type is nullable, see <a href="#nul_">nul_</a>.</p>
+            <pre class="vlight">
+//Create a method with optional parameters.
+var test2 = _(opt_(Boolean, true), opt_(Number), Number, function (mark, n1, n2) {
+    var num = n1 + n2;
+    return mark ? num : -num;
+});
+
+//And you can call this overload like below.
+test2(false, 10, 11); //returns -21
+test2(true, 12); //returns 12
+test2(13); //returns 13
+            </pre>
+            <h4 id="params_">params_(Type Type)</h4>
+            <p>There can be at most one group of variable-length parameters used in an overload, and if there are optional parameters, it must follow the optional ones.</p>
+            <pre class="vlight">
+//Create a method with variable-length parameters.
+var test3 = _(params_(String), function (strs) {
+    return strs.join(", ");
+});
+
+//Add an overload with both optional and variable-length parameters.
+test3._(Number, opt_(Boolean), params_(String), function (num, trigger, strs) {
+    console.log(num);
+    console.log(trigger);
+    return strs.join(", ");
+});
+
+//To call the first overload, you can try something like below.
+//These two ways are almost equal, but if both of them matches the parameter types of the same overload, the first one is prior.
+test3(["a", "bc", "def"]);
+test3("a", "bc", "def");
+            </pre>
+            <!-- Classes and related -->
+            <h3 id="classes-and-related">Classes and related</h3>
+            <p>VEJIS provides a powerful way to create and manage classes, and these classes created are free to be used with method overloading.</p>
+            <ul class="api-list">
+                <li><a href="#class_">class_([String name], Function ClassBody)</a></li>
+                <li><a href="#interface_">interface_([String name], PlainObject body)</a></li>
+                <li><a href="#enum_">enum_([String... eles]) +1 overload</a></li>
+                <li><a href="#nul_">nul_(Type Type)</a></li>
+                <li><a href="#delegate_">delegate_([String name], [Type... Types], Function? body)</a></li>
+            </ul>
+            <h4 id="class_">class_([String name], Function ClassBody)</h4>
+            <p>Let's go through the basic usage of this feature first.</p>
+            <pre class="vlight">
+var MyClass = class_("MyClass", function () {
+    //Defining "name" parameter will make intellisense for VS work better, it will also improve debugging experience.
+    this.pre = undefined;
+    this.test = _(String, function (str) {
+        console.log(this.pre + str);
+    }).bind_(this);
+
+    //Define a constructor.
+    this._(String, function (pre) {
+        //You can also add descritpion for a constructor here.
+        //pre: and description for parameter.
+        this.pre = pre;
+    });
+
+    //Define another constructor.
+    this._(Number, function (num) {
+        this.pre = num.toString() + ". ";
+    });
+});
+
+var o1 = new MyClass("1. ");
+var o2 = new MyClass(2);
+
+o1.test("hello"); //logs "1. hello"
+o2.test("world"); //logs "2. world"
+            </pre>
+            <p>Prototype and public/private static objects.</p>
+            <pre class="vlight">
+var A = class_(function (pub, pri) {
+    this.set = _(nul_(Object), function (value) {
+        pri.priValue = value;
+    });
+
+    //BTW, you can also define a method in a class this way.
+    this._("get", function () {
+        return pri.priValue;
+    });
+
+    this._(function () { });
+    this._(String, String, function (s1, s2) {
+        pub.pubValue = s1;
+        pri.priValue = s2;
+    });
+}).prototype_({
+    test: _(function () {
+        //Method defined with prototype.
+        console.log("hello!");
+    })
+}).prototype_(function () {
+    this._("test2", function () {
+        //Method defined with prototype.
+        console.log("hello 2!");
+    });
+}).static_(function () {
+    //Define static public properties, optional.
+    this.public_({
+        pubValue: "pub"
+    });
+
+    //Define static private properties, optional.
+    this.private_({
+        priValue: "pri"
+    });
+});
+
+//The static public properties will be copied to the class "A".
+//A.pubValue == "pub";
+
+var a1 = new A();
+var a2 = new A();
+
+a1.set(123);
+a2.get(); //returns 123
+
+//Actually, if you only want private static properties, you can use something like this.
+var AnotherClass = class_(function (pub, pri) {
+    //code...
+}).static_({
+    priValue: 'pri'
+});
+            </pre>
+            <p>And VEJIS makes inheriting very easy. Assuming that we have already a class A defined as the code above.</p>
+            <pre class="vlight">
+var B = class_(function (pub, pri, sup) {
+    this.getFromB = function () { return pri.priValue; };
+
+    this._(function () { });
+    this._(String, String, function (s1, s2) {
+        //You can also call A's constructor.
+        sup(s1, s2);
+    });
+}).inherit_(A);
+
+var a = new A();
+var b = new B();
+
+//Call the method defined in class A from the two instances.
+a.set(987);
+b.set(789);
+
+a.get(); //returns 987
+b.get(); //returns 789
+b.getFromB(); //returns 789
+a.test(); //logs "hello!";
+b.test(); //logs "hello!";
+a.test2(); //logs "hello 2!";
+b.test2(); //logs "hello 2!";
+            </pre>
+            <p>This example shows some relationship of the private objects in class "A" and class "B": they are individual. And so are the public objects. So, don't worry about your changes to a new class on the two objects would influence the old ones (the premise is, you are using the objects "pub" and "pri").</p>
+            <p>Besides, we can also use the factory way to create an instance of a class. What we need is just return an object or a function.</p>
+            <pre class="vlight">
+//Define a factory class.
+var StringMap = class_("StringMap", function () {
+    var hasOwnProperty = Object.prototype.hasOwnProperty;
+    var map = {};
+
+    //Return a function.
+    return function (key, value) {
+        if (arguments.length == 2)
+            map[key] = value;
+        return hasOwnProperty.call(map, key) ? map[key] : undefined;
+    };
+});
+
+//Use the same way to create a new instance as non-factory classes.
+var map = new StringMap();
+
+map("abc", 123);
+map("abc"); //returns 123
+is_(map, StringMap); //returns true
+            </pre>
+            <h4 id="interface_">interface_([String name], PlainObject body)</h4>
+            <p>I won't introduce what's interface, and let's meet the examples directly.</p>
+            <pre class="vlight">
+//Define an interface by a plain object specifying the type of each properties.
+var BaseI = interface_({
+    name: String,
+    age: Number
+});
+
+//Inherit from another interface.
+var I = interface_("I", {
+    from: String,
+    say: Function
+}).inherit_(BaseI);
+
+//Define a method with a parameter, of which the type is I.
+var fn = _(I, function (i) {
+    i.say(i.name, i.age, i.from);
+});
+
+//Call it.
+fn({
+    say: function (name, age, from) {
+        console.log("Hi, I am " + name + " from " + from + ". And I am " + age + " years old.");
+    },
+    name: "VILIC",
+    age: 20,
+    from: "China"
+});
+            </pre>
+            <p>A VEJIS class can of course implement an interface. If implement_ feature is used, we must ensure every item defined in the interface is implemented. Otherwise it will throw an error.</p>
+            <pre class="vlight">
+var MyClass = class_("MyClass", function () {
+    this.name = undefined;
+    this.age = undefined;
+    this.from = undefined;
+
+    this._(String, Number, String, function (name, age, from) {
+        this.name = name;
+        this.age = age;
+        this.from = from;
+    });
+
+    this.say = _(function () {
+        console.log("Hi, I am " + this.name + " from " + this.from + ". And I am " + this.age + " years old.");
+    }).bind_(this);
+}).implement_(I); //implement_ should be the last feature called when create a class.
+            </pre>
+            <h4 id="enum_">enum_([String... eles]) +1 overload</h4>
+            <p>The enum_ is used to declare an enumeration, a distinct type consisting of a set of named constants called the enumerator list.</p>
+            <p>By using this feature, we can make our code more readable.</p>
+            <p>Basic usage.</p>
+            <pre class="vlight">
+//Define an enum type. It support at most 32 elements.
+var Day = enum_("mon", "tue", "wed", "thu", "fri", "sat", "sun");
+var today = Day.sun;
+
+switch (today) {
+    case Day.sat:
+    case Day.sun:
+        console.log("It's weekend!");
+        break;
+    default:
+        console.log("It's weekday.");
+        break;
+}
+            </pre>
+            <p>The code above can also be written as this.</p>
+            <pre class="vlight">
+var Day = enum_("mon", "tue", "wed", "thu", "fri", "sat", "sun");
+var weekends = Day.sat | Day.sun; //use bitwise operator | to make things easier.
+var today = Day.sun;
+
+if (today.test(weekends)) //use test method to check weather the value matches.
+    console.log("It's weekend!");
+else
+    console.log("It's weekday.");
+            </pre>
+            <h4>enum_(String name, String[] eles)</h4>
+            <p>It is suggested to give the enum type a name.</p>
+            <pre class="vlight">
+//Give the enum type a name is always a better way.
+var Day = enum_("Day", ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
+            </pre>
+            <h4 id="nul_">nul_(Type Type)</h4>
+            <p>Sometimes we might want to allow an argument to be null, and you can use nul_ when defining the parameter type.</p>
+            <pre class="vlight">
+//Create a method with nullable parameter type.
+var fn = _(nul_(Function), function (callback) {
+    if (callback)
+        callback();
+    else
+        console.log("No callback...");
+});
+
+//There are many situations that you might use opt_ and nul_ together.
+fn._(opt_(nul_(Object)), String, function (o, str) {
+    if (o)
+        console.log("O! " + str);
+    else
+        console.log("X! " + str);
+});
+
+//Call these overloads.
+fn(null);
+fn(function () {
+    console.log("Hi!");
+});
+fn("Foo!");
+            </pre>
+            <p>What we should understand is the return value of nul_ actually represents a type, and it's different from opt_ or params_. So, something like nul_(opt_(...)) will not work correctly.</p>
+            <h4 id="delegate_">delegate_([String name], [Type... Types], Function? body)</h4>
+            <p>Similar to nul_, delegate_(...) also represents a type. So you can use it wherever a type can be used in.</p>
+            <pre class="vlight">
+var Say = delegate_(String, Number, String, function (name, age, from) { });
+
+var I = interface_("I", {
+    name: String,
+    age: Number,
+    from: String,
+    say: Say //replace the previous Function with the delegate Say.
+});
+
+var fn = _(I, function (i) {
+    i.say(i.name, i.age, i.from);
+    //Use a delegate is also mainly for improving intellisense and debugging experience.
+});
+
+//Also you can use with_/bind_, as_ as when you define a VEJIS method.
+var D = delegate_(Boolean, null).with_(String).as_(Number);
+            </pre>
+            <!-- Modules and related -->
+            <h3 id="modules-and-related">Modules and related</h3>
+            <p>I guess everyone who's interested in VEJIS knows why we need modules. So, again we'll go straight to examples.</p>
+            <ul class="api-list">
+                <li><a href="#use_">use_([String... names], Function handler)</a></li>
+                <li><a href="#module_">module_(String name, Function builder) +1 overload</a></li>
+                <li><a href="#import_">import_(String name)</a></li>
+                <li><a href="#require_">require_([String... srcs]) +1 overload</a></li>
+            </ul>
+            <h4 id="use_">use_([String... names], Function handler)</h4>
+            <p>When the modules specified in use_ are ready, they will be passed as arguments to the handler in order.</p>
+            <p>To use a module there have to be a way to create a module.</p>
+            <h4 id="module_">module_(String name, Function builder) +1 overload</h4>
+            <p>From the examples below, you will understand how they work.</p>
+            <pre class="vlight">
+//Use the modules that will be defined later.
+//Once the modules are ready, the handler will be called.
+use_("m-a", "m-b", function (a, b) {
+    var o = new a.MyClass();
+    console.log(a.name, o.abc);
+    b.test();
+});
+
+//Create a module. And "this" point is just the module object.
+module_("m-a", function () {
+    this.name = "guess what...";
+
+    //this.class_(Strng name, Function ClassBody);
+    this.class_("MyClass", function () {
+        this.abc = "abc";
+    });
+
+    //The code above equals:
+    //this.MyClass = class_("MyClass", ...);
+
+    //The methods below are similar:
+    //this.delegate_(String name, [Type... Types], Function? body);
+    //this.enum_(String name, String[] eles);
+    //this.interface_(String name, PlainObject body);
+});
+
+//Create another module.
+module_("m-b", function () {
+    this.id = 123;
+    this.test = function () {
+        console.log(this.id);
+    };
+});
+            </pre>
+            <h4>module_(String name, String[] parts, [Function? builder])</h4>
+            <p>Sometimes we may want to put the code of one module into several files, and this overload may help you out.</p>
+            <pre class="vlight">
+//The handler won't be called until the module and its parts are all loaded.
+use_("main", function (main) {
+    main.test();
+});
+
+//Create a module names main, and declare the names of its parts.
+module_("main", ["part-1", "part-2"], function () {
+    this.p1 = "p1 not ready.";
+    this.p2 = "p2 not ready.";
+
+    this.test = function () {
+        console.log(this.p1, this.p2);
+    };
+});
+
+//Define part-1 using a "/".
+//The builder of a part will only be called when the main one is ready.
+module_("main/part-1", function () {
+    this.p1 = "p1 ready!";
+});
+                
+//Define part-2 and its parts.
+module_("main/part-2", ["part-2-1", "part-2-2"], function () {
+    this.p2 = "p2 ready!";
+});
+
+module_("main/part-2/part-2-1", function () {
+    this.p2 += " p2-1 ready!";
+});
+
+module_("main/part-2/part-2-2", function () {
+    this.p2 += " p2-2 ready!";
+});
+
+            </pre>
+            <p>If you know that when a certain code is executed, some modules have been ready, you can also use import_ to get the module objects.</p>
+            <h4 id="import_">import_(String name)</h4>
+            <p>Assuming we have a module defined as code above, you can use import_ this way.</p>
+            <pre class="vlight">
+//If module main is not ready, import_ will return undefined and log a message.
+var main = import_("main");
+
+main.test();
+            </pre>
+            <p>Of course, when we use modules in practice, they are usually separated in files. You can use the feature below to load a file.</p>
+            <h4 id="require_">require_([String... srcs]) +1 overload</h4>
+            <pre class="vlight">
+//Simply require two files.
+require_("script/a.js", "script/b.js");
+            </pre>
+            <h4>require_(String baseDir, String[] srcs)</h4>
+            <pre class="vlight">
+//When you want to load files in the same directory, you can try this.
+require_("script/", ["a.js", "b.js"]);
+            </pre>
+            <!-- Extended types -->
+            <h3 id="extended-types">Extended types</h3>
+            <p>There are several very useful types built in VEJIS, and they are defined as global variables. Here're some details about these types.</p>
+            <ul class="api-list">
+                <li><a href="#IList">IList</a></li>
+                <li><a href="#Integer">Integer</a></li>
+                <li><a href="#List">List(Type Type)</a></li>
+                <li><a href="#PlainObject">PlainObject</a></li>
+                <li><a href="#Type">Type</a></li>
+            </ul>
+            <h4 id="IList">IList</h4>
+            <p>Represents an interface defined as below.</p>
+            <pre class="vlight">
+var IList = interface_("IList", {
+    length: Integer
+});
+            </pre>
+            <h4 id="Integer">Integer</h4>
+            <p>Represents number that mods 1 equals 0.</p>
+            <h4 id="List">List(Type Type)</h4>
+            <p>Represents an instance of Array, of which the elements are instances of the type given.</p>
+            <p>E.g. the following statement returns true.</p>
+            <pre class="vlight">
+is_(["a", "b"], List(String)); //the array can be empty.
+            </pre>
+            <h4 id="PlainObject">PlainObject</h4>
+            <p>Represents an object that makes the test function below return true.</p>
+            <pre class="vlight">
+function test(object) {
+    return !!object && typeof object == "object" && object.constructor == Object;
+}
+            </pre>
+            <h4 id="Type">Type</h4>
+            <p>Represents a type, such as a classic function, a VEJIS class/interface, and the return value of nul_/delegate_, etc.</p>
+            <!-- Others -->
+            <h3 id="others">Others</h3>
+            <ul class="api-list">
+                <li><a href="#is_">Boolean is_(Object? object, Type Type)</a></li>
+                <li><a href="#for_">Boolean for_(IList array, delegate(Object value, Integer i, Integer length) handler) +1 overload</a></li>
+                <li><a href="#forin_">Boolean forin_(Object object, delegate(Object value, String name) handler)</a></li>
+            </ul>
+            <h4 id="is_">Boolean is_(Object? object, Type Type)</h4>
+            <p>This function is the core of VEJIS, and I suggest you using this function instead of the operator "instanceof" when using VEJIS. To avoid confusing, I need to point out that the statements below return true.</p>
+            <pre class="vlight">
+is_(0, Number);
+is_("", String);
+is_(true, Boolean);
+
+//Asumming a is an instance of A, and A is inherited from B.
+is_(a, B);
+
+//Asumming i is an object that contains all the items defined in interface I.
+is_(i, I);
+            </pre>
+            <h4 id="for_">Boolean for_(IList array, delegate(Object value, Integer i, Integer length) handler) +1 overload</h4>
+            <p>Traverse an array, returns true if the traversal is completed.</p>
+            <p>
+                <b>array:</b> the array to be traversed.<br />
+                <b>handler:</b> the handler, return false to break traversal; and return a number to specify the increasement of i.
+            </p>
+            <pre class="vlight">
+var arr = [1, 2, 2, 3, 3, 3];
+
+var complete =
+for_(arr, function (value, i, length) {
+    if (i > length / 2)
+        return false; //return false to break the traversal.
+});
+
+if (complete)
+    console.log("completed");
+else
+    console.log("not completed");
+
+for_(arr, function (value, i) {
+    if (value == 2) {
+        arr.splice(i, 1);
+        return 0; //return 0 to let i keep its value, because we have deleted an item.
+    }
+});
+
+console.log(arr);
+            </pre>
+            <h4>Boolean for_([IList... arrays], Function handler)</h4>
+            <p>Sometimes we may want the full permutation of several arrays, this overload will help you out.</p>
+            <p>
+                <b>arrays:</b> the array to be traversed.<br />
+                <b>loop:</b> the handler, the full permutation of the arrays given will be passed in as arguments, return false to break traversal.
+            </p>
+            <pre class="vlight">
+for_([1, 2], [3, 4], function (a, b) {
+    console.log(a, b);
+});
+//logs:
+//1 3
+//1 4
+//2 3
+//2 4
+            </pre>
+            <h4 id="forin_">Boolean forin_(Object object, delegate(Object value, String name) handler)</h4>
+            <p>Traverse the properties of an object, returns true if the traversal is completed.</p>
+            <p>
+                <b>object:</b> the target object.<br />
+                <b>handler:</b> the handler, return false to break traversal.
+            </p>
+            <pre class="vlight">
+//An object for traversing.
+var object = {
+    p1: "abc",
+    p2: 123
+};
+
+var complete =
+forin_(object, function (value, i) {
+    if (typeof value == "string")
+        return false; //return false to break the traversal.
+});
+            </pre>
+        </div>
+    </div>
+</body>
+</html>
