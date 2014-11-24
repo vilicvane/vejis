@@ -1,1 +1,1 @@
-#[Brand New VEJIS 0.5](http://vejis.org/)
+#[Documentation](http://vilic.github.io/vejis)
